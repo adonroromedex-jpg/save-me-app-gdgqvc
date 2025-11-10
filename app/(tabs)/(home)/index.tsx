@@ -1,104 +1,253 @@
-import React from "react";
-import { Stack, Link } from "expo-router";
-import { FlatList, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
 
-const ICON_COLOR = "#007AFF";
+import React, { useState, useEffect } from "react";
+import { Stack, useRouter } from "expo-router";
+import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
+import { IconSymbol } from "@/components/IconSymbol";
+import { useTheme } from "@react-navigation/native";
+import { colors, commonStyles } from "@/styles/commonStyles";
+import * as LocalAuthentication from 'expo-local-authentication';
+import * as SecureStore from 'expo-secure-store';
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const modalDemos = [
-    {
-      title: "Standard Modal",
-      description: "Full screen modal presentation",
-      route: "/modal",
-      color: "#007AFF",
-    },
-    {
-      title: "Form Sheet",
-      description: "Bottom sheet with detents and grabber",
-      route: "/formsheet",
-      color: "#34C759",
-    },
-    {
-      title: "Transparent Modal",
-      description: "Overlay without obscuring background",
-      route: "/transparent-modal",
-      color: "#FF9500",
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasHardware, setHasHardware] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+
+  useEffect(() => {
+    checkBiometricSupport();
+  }, []);
+
+  const checkBiometricSupport = async () => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      setHasHardware(compatible);
+      
+      if (compatible) {
+        const enrolled = await LocalAuthentication.isEnrolledAsync();
+        setIsEnrolled(enrolled);
+      }
+      
+      console.log('Biometric hardware available:', compatible);
+      console.log('Biometric enrolled:', isEnrolled);
+    } catch (error) {
+      console.error('Error checking biometric support:', error);
     }
+  };
+
+  const handleAuthenticate = async () => {
+    try {
+      if (!hasHardware || !isEnrolled) {
+        Alert.alert(
+          "Biometric Not Available",
+          "Please set up biometric authentication on your device for enhanced security.",
+          [{ text: "OK" }]
+        );
+        setIsAuthenticated(true);
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate to access Save Me',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        setIsAuthenticated(true);
+        console.log('Authentication successful');
+      } else {
+        Alert.alert('Authentication Failed', 'Please try again.');
+        console.log('Authentication failed:', result);
+      }
+    } catch (error) {
+      console.error('Authentication error:', error);
+      Alert.alert('Error', 'An error occurred during authentication.');
+    }
+  };
+
+  const features = [
+    {
+      title: "Secure Drive",
+      description: "AES-256 encrypted storage for your private media",
+      icon: "lock.shield.fill",
+      color: colors.primary,
+      route: "/secure-drive",
+    },
+    {
+      title: "Private Camera",
+      description: "Take photos directly in the app with no external storage",
+      icon: "camera.fill",
+      color: colors.secondary,
+      route: "/private-camera",
+    },
+    {
+      title: "Controlled Sharing",
+      description: "Share with unique codes and time-limited access",
+      icon: "square.and.arrow.up.fill",
+      color: colors.accent,
+      route: "/controlled-sharing",
+    },
+    {
+      title: "Access Log",
+      description: "Track all access to your private content",
+      icon: "list.bullet.clipboard.fill",
+      color: colors.highlight,
+      route: "/access-log",
+    },
   ];
 
-  const renderModalDemo = ({ item }: { item: (typeof modalDemos)[0] }) => (
-    <GlassView style={[
-      styles.demoCard,
-      Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-    ]} glassEffectStyle="regular">
-      <View style={[styles.demoIcon, { backgroundColor: item.color }]}>
-        <IconSymbol name="square.grid.3x3" color="white" size={24} />
-      </View>
-      <View style={styles.demoContent}>
-        <Text style={[styles.demoTitle, { color: theme.colors.text }]}>{item.title}</Text>
-        <Text style={[styles.demoDescription, { color: theme.dark ? '#98989D' : '#666' }]}>{item.description}</Text>
-      </View>
-      <Link href={item.route as any} asChild>
-        <Pressable>
-          <GlassView style={[
-            styles.tryButton,
-            Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)' }
-          ]} glassEffectStyle="clear">
-            <Text style={[styles.tryButtonText, { color: theme.colors.primary }]}>Try It</Text>
-          </GlassView>
-        </Pressable>
-      </Link>
-    </GlassView>
-  );
+  const securityFeatures = [
+    { icon: "faceid", text: "Facial Recognition" },
+    { icon: "timer", text: "Auto-Delete 24h" },
+    { icon: "eye.slash.fill", text: "Anti-Screenshot" },
+    { icon: "bell.badge.fill", text: "View Notifications" },
+  ];
 
   const renderHeaderRight = () => (
     <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
+      onPress={() => Alert.alert("Settings", "Settings feature coming soon")}
       style={styles.headerButtonContainer}
     >
-      <IconSymbol name="plus" color={theme.colors.primary} />
+      <IconSymbol name="gear" color={colors.primary} />
     </Pressable>
   );
 
   const renderHeaderLeft = () => (
     <Pressable
-      onPress={() => Alert.alert("Not Implemented", "This feature is not implemented yet")}
+      onPress={() => Alert.alert("Panic Button", "This will delete all sensitive content. Are you sure?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete All", style: "destructive", onPress: () => console.log("Panic delete triggered") }
+      ])}
       style={styles.headerButtonContainer}
     >
-      <IconSymbol
-        name="gear"
-        color={theme.colors.primary}
-      />
+      <IconSymbol name="exclamationmark.triangle.fill" color={colors.danger} />
     </Pressable>
   );
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        {Platform.OS === 'ios' && (
+          <Stack.Screen
+            options={{
+              title: "Save Me",
+              headerShown: false,
+            }}
+          />
+        )}
+        <View style={[commonStyles.container, commonStyles.centerContent]}>
+          <View style={[styles.lockIconContainer, { backgroundColor: colors.primary }]}>
+            <IconSymbol name="lock.shield.fill" color={colors.card} size={60} />
+          </View>
+          <Text style={[commonStyles.title, { textAlign: 'center' }]}>Welcome to Save Me</Text>
+          <Text style={[commonStyles.subtitle, { textAlign: 'center', paddingHorizontal: 40 }]}>
+            Your privacy is our priority. Authenticate to access your secure content.
+          </Text>
+          
+          <View style={styles.securityBadgesContainer}>
+            {securityFeatures.map((feature, index) => (
+              <View key={index} style={styles.securityBadge}>
+                <IconSymbol name={feature.icon} color={colors.primary} size={20} />
+                <Text style={styles.securityBadgeText}>{feature.text}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Pressable 
+            style={[styles.authButton, { backgroundColor: colors.primary }]}
+            onPress={handleAuthenticate}
+          >
+            <IconSymbol name="faceid" color={colors.card} size={24} />
+            <Text style={styles.authButtonText}>Authenticate</Text>
+          </Pressable>
+
+          <Text style={styles.privacyText}>
+            🔐 End-to-end encrypted • Zero-knowledge storage
+          </Text>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
-            title: "Building the app...",
+            title: "Save Me",
             headerRight: renderHeaderRight,
             headerLeft: renderHeaderLeft,
           }}
         />
       )}
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <FlatList
-          data={modalDemos}
-          renderItem={renderModalDemo}
-          keyExtractor={(item) => item.route}
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <ScrollView
           contentContainerStyle={[
-            styles.listContainer,
-            Platform.OS !== 'ios' && styles.listContainerWithTabBar
+            styles.scrollContent,
+            Platform.OS !== 'ios' && styles.scrollContentWithTabBar
           ]}
-          contentInsetAdjustmentBehavior="automatic"
           showsVerticalScrollIndicator={false}
-        />
+        >
+          <View style={styles.header}>
+            <Text style={commonStyles.title}>Your Secure Vault</Text>
+            <Text style={commonStyles.subtitle}>
+              All your private content is protected with military-grade encryption
+            </Text>
+          </View>
+
+          <View style={styles.statsContainer}>
+            <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Secure Files</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Shared Items</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.statNumber}>0</Text>
+              <Text style={styles.statLabel}>Access Logs</Text>
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Features</Text>
+          
+          {features.map((feature, index) => (
+            <Pressable
+              key={index}
+              style={[styles.featureCard, { backgroundColor: colors.card }]}
+              onPress={() => {
+                if (feature.route === "/secure-drive") {
+                  router.push("/(tabs)/(home)/secure-drive");
+                } else if (feature.route === "/private-camera") {
+                  router.push("/(tabs)/(home)/private-camera");
+                } else {
+                  Alert.alert("Coming Soon", `${feature.title} feature will be available soon!`);
+                }
+              }}
+            >
+              <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
+                <IconSymbol name={feature.icon} color={colors.card} size={28} />
+              </View>
+              <View style={styles.featureContent}>
+                <Text style={styles.featureTitle}>{feature.title}</Text>
+                <Text style={styles.featureDescription}>{feature.description}</Text>
+              </View>
+              <IconSymbol name="chevron.right" color={colors.textSecondary} size={20} />
+            </Pressable>
+          ))}
+
+          <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
+            <IconSymbol name="checkmark.shield.fill" color={colors.card} size={32} />
+            <Text style={styles.infoTitle}>Your Privacy Matters</Text>
+            <Text style={styles.infoDescription}>
+              Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide.
+              Your data never leaves your device unencrypted.
+            </Text>
+          </View>
+        </ScrollView>
       </View>
     </>
   );
@@ -107,55 +256,155 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor handled dynamically
   },
-  listContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+  scrollContent: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
-  listContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+  scrollContentWithTabBar: {
+    paddingBottom: 100,
   },
-  demoCard: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  header: {
+    marginBottom: 24,
+  },
+  headerButtonContainer: {
+    padding: 8,
+  },
+  lockIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  securityBadgesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 32,
+    paddingHorizontal: 20,
+  },
+  securityBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    margin: 4,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
-  demoIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  securityBadgeText: {
+    fontSize: 12,
+    color: colors.text,
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  authButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    marginBottom: 16,
+    minWidth: 200,
+  },
+  authButtonText: {
+    color: colors.card,
+    fontSize: 18,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  privacyText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  statCard: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  featureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
+  },
+  featureIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
-  demoContent: {
+  featureContent: {
     flex: 1,
   },
-  demoTitle: {
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  featureDescription: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+  infoCard: {
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  infoTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 4,
-    // color handled dynamically
+    color: colors.card,
+    marginTop: 12,
+    marginBottom: 8,
   },
-  demoDescription: {
+  infoDescription: {
     fontSize: 14,
-    lineHeight: 18,
-    // color handled dynamically
-  },
-  headerButtonContainer: {
-    padding: 6,
-  },
-  tryButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  tryButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    // color handled dynamically
+    color: colors.card,
+    textAlign: 'center',
+    lineHeight: 20,
+    opacity: 0.9,
   },
 });
