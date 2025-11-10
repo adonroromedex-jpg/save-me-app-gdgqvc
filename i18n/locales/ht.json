@@ -1,0 +1,186 @@
+
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Anile",
+    "delete": "Efase",
+    "save": "Anrejistre",
+    "edit": "Modifye",
+    "share": "Pataje",
+    "close": "Fèmen",
+    "confirm": "Konfime",
+    "back": "Retounen",
+    "next": "Swivan",
+    "done": "Fini",
+    "loading": "Ap chaje...",
+    "error": "Erè",
+    "success": "Siksè",
+    "warning": "Avètisman"
+  },
+  "auth": {
+    "welcome": "Byenveni nan Save Me",
+    "welcomeDescription": "Vi prive w se priyorite nou. Otantifye pou jwenn aksè nan kontni sekirize w.",
+    "authenticate": "Otantifye",
+    "authenticationFailed": "Otantifikasyon echwe",
+    "authenticationFailedMessage": "Tanpri eseye ankò.",
+    "biometricNotAvailable": "Byometri pa disponib",
+    "biometricNotAvailableMessage": "Tanpri konfigire otantifikasyon byometrik sou aparèy ou pou plis sekirite.",
+    "sessionExpired": "Sesyon ekspire",
+    "sessionExpiredMessage": "Sesyon w ekspire akòz inaktivite. Tanpri otantifye ankò.",
+    "privacyNote": "🔐 Chifreman bout-a-bout • Depo konesans zewo"
+  },
+  "home": {
+    "title": "Kòf fò sekirize w",
+    "subtitle": "Tout kontni prive w pwoteje ak chifreman nivo militè",
+    "maxSecurityActive": "🔐 Sekirite maksimòm aktif",
+    "securityFeatures": "Chifreman AES-256 • Pwoteksyon kapti ekran • Efasman otomatik aktif",
+    "secureFiles": "Fichye sekirize",
+    "sharedItems": "Eleman pataje",
+    "accessLogs": "Jounal aksè",
+    "features": "Karakteristik",
+    "privacyMatters": "Vi prive w enpòtan",
+    "privacyDescription": "Save Me itilize chifreman AES-256, menm estanda gouvènman ak bank nan mond antye itilize. Done w pa janm kite aparèy ou san chifreman."
+  },
+  "features": {
+    "secureDrive": {
+      "title": "Depo sekirize",
+      "description": "Depo chifre AES-256 pou medya prive w"
+    },
+    "privateCamera": {
+      "title": "Kamera prive",
+      "description": "Pran foto dirèkteman nan aplikasyon an san depo ekstèn"
+    },
+    "sharedWithMe": {
+      "title": "Pataje avè m",
+      "description": "Gade kontni lòt itilizatè anrejistre yo pataje"
+    },
+    "accessLog": {
+      "title": "Jounal aksè",
+      "description": "Siveyans tout tantativ aksè ak aktivite"
+    },
+    "facialRecognition": "Rekonesans fasyàl",
+    "autoDelete": "Efasman otomatik 24è",
+    "antiScreenshot": "Anti-kapti ekran",
+    "viewNotifications": "Notifikasyon vizyalizasyon"
+  },
+  "secureDrive": {
+    "title": "Depo sekirize",
+    "emptyState": "Poko gen fichye sekirize",
+    "emptyStateDescription": "Pran foto ak kamera prive a oswa enpòte nan galri w pou kòmanse",
+    "addPhoto": "Ajoute foto",
+    "deleteFile": "Efase fichye",
+    "deleteConfirm": "Èske w si w vle efase fichye sa a?",
+    "shareFile": "Pataje fichye",
+    "fileDeleted": "Fichye efase avèk siksè",
+    "errorLoading": "Erè nan chajman fichye sekirize yo"
+  },
+  "privateCamera": {
+    "title": "Kamera prive",
+    "noPermission": "Pa gen aksè nan kamera",
+    "requestPermission": "Nou bezwen pèmisyon w pou itilize kamera a",
+    "grantPermission": "Bay pèmisyon",
+    "takePicture": "Pran foto",
+    "startRecording": "Kòmanse anrejistreman",
+    "stopRecording": "Sispann anrejistreman",
+    "flipCamera": "Vire kamera",
+    "photoSaved": "Foto anrejistre an sekirite",
+    "videoSaved": "Videyo anrejistre an sekirite",
+    "shareContent": "Pataje kontni"
+  },
+  "shareWithUsers": {
+    "title": "Pataje ak itilizatè",
+    "selectUsers": "Chwazi itilizatè pou pataje ak yo",
+    "noUsers": "Pa jwenn itilizatè anrejistre",
+    "noUsersDescription": "Ajoute itilizatè nan seksyon Jere Itilizatè yo pou pataje kontni ak yo",
+    "shareButton": "Pataje ak itilizatè seleksyone yo",
+    "shareSuccess": "Kontni pataje avèk siksè",
+    "shareError": "Erè nan pataje kontni",
+    "lastSeen": "Dènye fwa wè",
+    "online": "Anliy",
+    "offline": "Dekonekte",
+    "selectAtLeastOne": "Tanpri chwazi omwen yon itilizatè pou pataje ak li"
+  },
+  "sharedWithMe": {
+    "title": "Pataje avè m",
+    "emptyState": "Pa gen kontni pataje",
+    "emptyStateDescription": "Kontni lòt itilizatè pataje ak ou ap parèt isit la",
+    "from": "Soti nan",
+    "expiresIn": "Ekspire nan",
+    "expired": "Ekspire",
+    "viewsLeft": "vizyalizasyon ki rete",
+    "view": "Gade",
+    "deleteContent": "Efase kontni",
+    "deleteConfirm": "Èske w si w vle efase kontni pataje sa a?",
+    "contentDeleted": "Kontni efase avèk siksè"
+  },
+  "manageUsers": {
+    "title": "Jere itilizatè",
+    "currentUser": "Itilizatè aktyèl",
+    "registeredUsers": "Itilizatè anrejistre",
+    "addNewUser": "Ajoute nouvo itilizatè",
+    "username": "Non itilizatè",
+    "email": "Imèl",
+    "addUser": "Ajoute itilizatè",
+    "deleteUser": "Efase itilizatè",
+    "deleteConfirm": "Èske w si w vle efase itilizatè sa a?",
+    "userDeleted": "Itilizatè efase avèk siksè",
+    "userAdded": "Itilizatè ajoute avèk siksè",
+    "fillAllFields": "Tanpri ranpli tout chan yo",
+    "noUsers": "Poko gen itilizatè anrejistre"
+  },
+  "accessLog": {
+    "title": "Jounal aksè",
+    "emptyState": "Poko gen jounal aksè",
+    "emptyStateDescription": "Tout tantativ koneksyon ak aksè fichye ap anrejistre isit la",
+    "login": "Koneksyon",
+    "fileView": "Vizyalizasyon fichye",
+    "fileShare": "Pataje fichye",
+    "fileDelete": "Efasman fichye",
+    "failedAuth": "Otantifikasyon echwe"
+  },
+  "profile": {
+    "title": "Pwofil",
+    "secureUser": "Itilizatè sekirize",
+    "premium": "Premium",
+    "filesProtected": "Fichye pwoteje",
+    "shares": "Pataj",
+    "secure": "Sekirize",
+    "security": "Sekirite",
+    "notifications": "Notifikasyon",
+    "account": "Kont",
+    "biometricAuth": "Otantifikasyon byometrik",
+    "screenshotProtection": "Pwoteksyon kapti ekran",
+    "autoDelete24h": "Efasman otomatik (24è)",
+    "ghostMode": "Mòd fantòm",
+    "viewNotifications": "Notifikasyon vizyalizasyon",
+    "manageUsers": "Jere itilizatè",
+    "accessLog": "Jounal aksè",
+    "changePassword": "Chanje modpas",
+    "twoFactorAuth": "Otantifikasyon de faktè",
+    "helpSupport": "Èd ak sipò",
+    "panicDelete": "🚨 Efasman panik tout fichye",
+    "panicDeleteTitle": "⚠️ Efasman panik",
+    "panicDeleteMessage": "Sa ap efase pèmanan TOUT fichye sekirize w ak kontni pataje. Aksyon sa a pa ka defèt!",
+    "deleteEverything": "Efase tout bagay",
+    "allDeleted": "✓ Efase",
+    "allDeletedMessage": "Tout fichye sekirize yo efase pèmanan",
+    "privacyProtected": "Vi prive w pwoteje",
+    "privacyFeatures": "- Chifreman AES-256 bout-a-bout\n- Depo konesans zewo\n- Pwoteksyon kapti ekran ak anrejistreman\n- Efasman otomatik apre 24 èdtan\n- Jounal aksè konplè",
+    "version": "Save Me v1.0.0 • Edisyon sekirize",
+    "ghostModeActivated": "Mòd fantòm aktif",
+    "ghostModeMessage": "Ikòn aplikasyon an ap kache sou ekran akèy ou. Pou jwenn aksè nan aplikasyon an, itilize jès sekrè a oswa chèche li.",
+    "changePasswordSoon": "Fonksyon sa a ap disponib byento",
+    "twoFactorSoon": "Konfigirasyon otantifikasyon de faktè ap vini byento",
+    "helpContact": "Kontakte sipò nan support@saveme.app",
+    "settings": "Paramèt",
+    "additionalSettings": "Paramèt adisyonèl ap vini byento",
+    "language": "Lang",
+    "selectLanguage": "Chwazi lang"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "ht": "Kreyòl Ayisyen"
+  }
+}

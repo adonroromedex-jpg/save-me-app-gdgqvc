@@ -1,0 +1,186 @@
+
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "edit": "Editar",
+    "share": "Compartir",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "done": "Hecho",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "warning": "Advertencia"
+  },
+  "auth": {
+    "welcome": "Bienvenido a Save Me",
+    "welcomeDescription": "Tu privacidad es nuestra prioridad. Autentícate para acceder a tu contenido seguro.",
+    "authenticate": "Autenticar",
+    "authenticationFailed": "Autenticación fallida",
+    "authenticationFailedMessage": "Por favor, inténtalo de nuevo.",
+    "biometricNotAvailable": "Biometría no disponible",
+    "biometricNotAvailableMessage": "Por favor, configura la autenticación biométrica en tu dispositivo para mayor seguridad.",
+    "sessionExpired": "Sesión expirada",
+    "sessionExpiredMessage": "Tu sesión ha expirado debido a inactividad. Por favor, autentícate de nuevo.",
+    "privacyNote": "🔐 Cifrado de extremo a extremo • Almacenamiento de conocimiento cero"
+  },
+  "home": {
+    "title": "Tu bóveda segura",
+    "subtitle": "Todo tu contenido privado está protegido con cifrado de grado militar",
+    "maxSecurityActive": "🔐 Seguridad máxima activada",
+    "securityFeatures": "Cifrado AES-256 • Protección de captura de pantalla • Eliminación automática activada",
+    "secureFiles": "Archivos seguros",
+    "sharedItems": "Elementos compartidos",
+    "accessLogs": "Registros de acceso",
+    "features": "Características",
+    "privacyMatters": "Tu privacidad importa",
+    "privacyDescription": "Save Me utiliza cifrado AES-256, el mismo estándar utilizado por gobiernos y bancos en todo el mundo. Tus datos nunca salen de tu dispositivo sin cifrar."
+  },
+  "features": {
+    "secureDrive": {
+      "title": "Almacenamiento seguro",
+      "description": "Almacenamiento cifrado AES-256 para tus medios privados"
+    },
+    "privateCamera": {
+      "title": "Cámara privada",
+      "description": "Toma fotos directamente en la aplicación sin almacenamiento externo"
+    },
+    "sharedWithMe": {
+      "title": "Compartido conmigo",
+      "description": "Ver contenido compartido por otros usuarios registrados"
+    },
+    "accessLog": {
+      "title": "Registro de acceso",
+      "description": "Monitorear todos los intentos de acceso y actividades"
+    },
+    "facialRecognition": "Reconocimiento facial",
+    "autoDelete": "Eliminación automática 24h",
+    "antiScreenshot": "Anti-captura de pantalla",
+    "viewNotifications": "Notificaciones de visualización"
+  },
+  "secureDrive": {
+    "title": "Almacenamiento seguro",
+    "emptyState": "Aún no hay archivos seguros",
+    "emptyStateDescription": "Toma fotos con la cámara privada o importa desde tu galería para comenzar",
+    "addPhoto": "Agregar foto",
+    "deleteFile": "Eliminar archivo",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este archivo?",
+    "shareFile": "Compartir archivo",
+    "fileDeleted": "Archivo eliminado exitosamente",
+    "errorLoading": "Error al cargar archivos seguros"
+  },
+  "privateCamera": {
+    "title": "Cámara privada",
+    "noPermission": "Sin acceso a la cámara",
+    "requestPermission": "Necesitamos tu permiso para usar la cámara",
+    "grantPermission": "Conceder permiso",
+    "takePicture": "Tomar foto",
+    "startRecording": "Iniciar grabación",
+    "stopRecording": "Detener grabación",
+    "flipCamera": "Voltear cámara",
+    "photoSaved": "Foto guardada de forma segura",
+    "videoSaved": "Video guardado de forma segura",
+    "shareContent": "Compartir contenido"
+  },
+  "shareWithUsers": {
+    "title": "Compartir con usuarios",
+    "selectUsers": "Selecciona usuarios para compartir",
+    "noUsers": "No se encontraron usuarios registrados",
+    "noUsersDescription": "Agrega usuarios en la sección Administrar usuarios para compartir contenido con ellos",
+    "shareButton": "Compartir con usuarios seleccionados",
+    "shareSuccess": "Contenido compartido exitosamente",
+    "shareError": "Error al compartir contenido",
+    "lastSeen": "Visto por última vez",
+    "online": "En línea",
+    "offline": "Desconectado",
+    "selectAtLeastOne": "Por favor, selecciona al menos un usuario para compartir"
+  },
+  "sharedWithMe": {
+    "title": "Compartido conmigo",
+    "emptyState": "Sin contenido compartido",
+    "emptyStateDescription": "El contenido compartido contigo por otros usuarios aparecerá aquí",
+    "from": "De",
+    "expiresIn": "Expira en",
+    "expired": "Expirado",
+    "viewsLeft": "vistas restantes",
+    "view": "Ver",
+    "deleteContent": "Eliminar contenido",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este contenido compartido?",
+    "contentDeleted": "Contenido eliminado exitosamente"
+  },
+  "manageUsers": {
+    "title": "Administrar usuarios",
+    "currentUser": "Usuario actual",
+    "registeredUsers": "Usuarios registrados",
+    "addNewUser": "Agregar nuevo usuario",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "addUser": "Agregar usuario",
+    "deleteUser": "Eliminar usuario",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este usuario?",
+    "userDeleted": "Usuario eliminado exitosamente",
+    "userAdded": "Usuario agregado exitosamente",
+    "fillAllFields": "Por favor, completa todos los campos",
+    "noUsers": "Aún no hay usuarios registrados"
+  },
+  "accessLog": {
+    "title": "Registro de acceso",
+    "emptyState": "Aún no hay registros de acceso",
+    "emptyStateDescription": "Todos los intentos de inicio de sesión y acceso a archivos se registrarán aquí",
+    "login": "Inicio de sesión",
+    "fileView": "Vista de archivo",
+    "fileShare": "Compartir archivo",
+    "fileDelete": "Eliminar archivo",
+    "failedAuth": "Autenticación fallida"
+  },
+  "profile": {
+    "title": "Perfil",
+    "secureUser": "Usuario seguro",
+    "premium": "Premium",
+    "filesProtected": "Archivos protegidos",
+    "shares": "Compartidos",
+    "secure": "Seguro",
+    "security": "Seguridad",
+    "notifications": "Notificaciones",
+    "account": "Cuenta",
+    "biometricAuth": "Autenticación biométrica",
+    "screenshotProtection": "Protección de captura de pantalla",
+    "autoDelete24h": "Eliminación automática (24h)",
+    "ghostMode": "Modo fantasma",
+    "viewNotifications": "Notificaciones de visualización",
+    "manageUsers": "Administrar usuarios",
+    "accessLog": "Registro de acceso",
+    "changePassword": "Cambiar contraseña",
+    "twoFactorAuth": "Autenticación de dos factores",
+    "helpSupport": "Ayuda y soporte",
+    "panicDelete": "🚨 Eliminación de pánico de todos los archivos",
+    "panicDeleteTitle": "⚠️ Eliminación de pánico",
+    "panicDeleteMessage": "Esto eliminará permanentemente TODOS tus archivos seguros y contenido compartido. ¡Esta acción no se puede deshacer!",
+    "deleteEverything": "Eliminar todo",
+    "allDeleted": "✓ Eliminado",
+    "allDeletedMessage": "Todos los archivos seguros han sido eliminados permanentemente",
+    "privacyProtected": "Tu privacidad está protegida",
+    "privacyFeatures": "- Cifrado AES-256 de extremo a extremo\n- Almacenamiento de conocimiento cero\n- Protección de captura de pantalla y grabación\n- Eliminación automática después de 24 horas\n- Registro completo de accesos",
+    "version": "Save Me v1.0.0 • Edición segura",
+    "ghostModeActivated": "Modo fantasma activado",
+    "ghostModeMessage": "El ícono de la aplicación se ocultará de tu pantalla de inicio. Para acceder a la aplicación, usa el gesto secreto o búscala.",
+    "changePasswordSoon": "Esta función estará disponible pronto",
+    "twoFactorSoon": "Configuración de autenticación de dos factores próximamente",
+    "helpContact": "Contacta al soporte en support@saveme.app",
+    "settings": "Configuración",
+    "additionalSettings": "Configuración adicional próximamente",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar idioma"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "es": "Español",
+    "ht": "Kreyòl Ayisyen"
+  }
+}

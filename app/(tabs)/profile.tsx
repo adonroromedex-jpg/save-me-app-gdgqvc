@@ -167,6 +167,8 @@ export default function ProfileScreen() {
   const languages = [
     { code: 'en', name: i18n.t('languages.en'), flag: '🇬🇧' },
     { code: 'fr', name: i18n.t('languages.fr'), flag: '🇫🇷' },
+    { code: 'es', name: i18n.t('languages.es'), flag: '🇪🇸' },
+    { code: 'ht', name: i18n.t('languages.ht'), flag: '🇭🇹' },
   ];
 
   const handlePanicDelete = async () => {
