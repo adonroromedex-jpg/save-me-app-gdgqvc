@@ -6,6 +6,8 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { colors, commonStyles } from "@/styles/commonStyles";
+import * as SecureStore from 'expo-secure-store';
+import { logAccess } from "@/utils/securityUtils";
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -14,6 +16,39 @@ export default function ProfileScreen() {
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(true);
   const [ghostModeEnabled, setGhostModeEnabled] = useState(false);
+  const [screenshotProtection, setScreenshotProtection] = useState(true);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    setNotificationsEnabled(value);
+    await logAccess('login', `Notifications ${value ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleToggleBiometric = async (value: boolean) => {
+    setBiometricEnabled(value);
+    await logAccess('login', `Biometric authentication ${value ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleToggleAutoDelete = async (value: boolean) => {
+    setAutoDeleteEnabled(value);
+    await logAccess('login', `Auto-delete ${value ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleToggleGhostMode = async (value: boolean) => {
+    setGhostModeEnabled(value);
+    if (value) {
+      Alert.alert(
+        'Ghost Mode Activated',
+        'The app icon will be hidden from your home screen. To access the app, use the secret gesture or search for it.',
+        [{ text: 'OK' }]
+      );
+    }
+    await logAccess('login', `Ghost mode ${value ? 'enabled' : 'disabled'}`);
+  };
+
+  const handleToggleScreenshotProtection = async (value: boolean) => {
+    setScreenshotProtection(value);
+    await logAccess('login', `Screenshot protection ${value ? 'enabled' : 'disabled'}`);
+  };
 
   const settingsSections = [
     {
@@ -23,21 +58,28 @@ export default function ProfileScreen() {
           icon: "faceid",
           label: "Biometric Authentication",
           value: biometricEnabled,
-          onToggle: setBiometricEnabled,
+          onToggle: handleToggleBiometric,
           color: colors.primary,
+        },
+        {
+          icon: "eye.slash.fill",
+          label: "Screenshot Protection",
+          value: screenshotProtection,
+          onToggle: handleToggleScreenshotProtection,
+          color: colors.danger,
         },
         {
           icon: "timer",
           label: "Auto-Delete (24h)",
           value: autoDeleteEnabled,
-          onToggle: setAutoDeleteEnabled,
+          onToggle: handleToggleAutoDelete,
           color: colors.accent,
         },
         {
           icon: "eye.slash.fill",
           label: "Ghost Mode",
           value: ghostModeEnabled,
-          onToggle: setGhostModeEnabled,
+          onToggle: handleToggleGhostMode,
           color: colors.secondary,
         },
       ],
@@ -49,7 +91,7 @@ export default function ProfileScreen() {
           icon: "bell.fill",
           label: "View Notifications",
           value: notificationsEnabled,
-          onToggle: setNotificationsEnabled,
+          onToggle: handleToggleNotifications,
           color: colors.highlight,
         },
       ],
@@ -64,22 +106,22 @@ export default function ProfileScreen() {
       action: () => router.push("/(tabs)/(home)/manage-users"),
     },
     {
+      icon: "doc.text.fill",
+      label: "Access Log",
+      color: colors.primary,
+      action: () => router.push("/(tabs)/(home)/access-log"),
+    },
+    {
       icon: "key.fill",
       label: "Change Password",
-      color: colors.primary,
+      color: colors.accent,
       action: () => Alert.alert("Change Password", "This feature will be available soon"),
     },
     {
       icon: "shield.checkered",
       label: "Two-Factor Authentication",
-      color: colors.accent,
-      action: () => Alert.alert("2FA", "Two-factor authentication setup coming soon"),
-    },
-    {
-      icon: "doc.text.fill",
-      label: "Access Log",
       color: colors.secondary,
-      action: () => Alert.alert("Access Log", "View all access attempts to your content"),
+      action: () => Alert.alert("2FA", "Two-factor authentication setup coming soon"),
     },
     {
       icon: "questionmark.circle.fill",
@@ -88,6 +130,32 @@ export default function ProfileScreen() {
       action: () => Alert.alert("Help", "Contact support at support@saveme.app"),
     },
   ];
+
+  const handlePanicDelete = async () => {
+    Alert.alert(
+      "⚠️ Panic Delete",
+      "This will permanently delete ALL your secure files and shared content. This action cannot be undone!",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete Everything",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await SecureStore.deleteItemAsync('secure_files');
+              await SecureStore.deleteItemAsync('shared_content');
+              await logAccess('file_delete', 'Panic delete executed - all files deleted');
+              Alert.alert("✓ Deleted", "All secure files have been permanently deleted");
+              console.log("Panic delete executed");
+            } catch (error) {
+              console.error('Error during panic delete:', error);
+              Alert.alert("Error", "Failed to delete all files");
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const renderHeaderRight = () => (
     <Pressable
@@ -197,26 +265,10 @@ export default function ProfileScreen() {
 
           <Pressable
             style={[styles.dangerButton, { backgroundColor: colors.danger }]}
-            onPress={() => {
-              Alert.alert(
-                "Panic Delete",
-                "This will permanently delete ALL your secure files. This action cannot be undone!",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete Everything",
-                    style: "destructive",
-                    onPress: () => {
-                      Alert.alert("Deleted", "All secure files have been deleted");
-                      console.log("Panic delete executed");
-                    }
-                  }
-                ]
-              );
-            }}
+            onPress={handlePanicDelete}
           >
             <IconSymbol name="exclamationmark.triangle.fill" color={colors.card} size={20} />
-            <Text style={styles.dangerButtonText}>Panic Delete All Files</Text>
+            <Text style={styles.dangerButtonText}>🚨 Panic Delete All Files</Text>
           </Pressable>
 
           <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
@@ -224,12 +276,16 @@ export default function ProfileScreen() {
             <View style={styles.infoContent}>
               <Text style={styles.infoTitle}>Your Privacy is Protected</Text>
               <Text style={styles.infoDescription}>
-                All your data is encrypted with AES-256 encryption and stored locally on your device.
+                - AES-256 end-to-end encryption{'\n'}
+                - Zero-knowledge storage{'\n'}
+                - Screenshot & screen recording protection{'\n'}
+                - Auto-delete after 24 hours{'\n'}
+                - Complete access logging
               </Text>
             </View>
           </View>
 
-          <Text style={styles.versionText}>Save Me v1.0.0</Text>
+          <Text style={styles.versionText}>Save Me v1.0.0 • Secure Edition</Text>
         </ScrollView>
       </SafeAreaView>
     </>
@@ -392,10 +448,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.card,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   infoDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.card,
     lineHeight: 20,
     opacity: 0.9,

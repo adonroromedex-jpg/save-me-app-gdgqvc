@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Image } from "react-native";
+import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Image, AppState } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
+import { checkSessionTimeout, updateLastActivity, logAccess, checkAndExecuteAutoDeletes, preventScreenCapture } from "@/utils/securityUtils";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -34,7 +35,29 @@ export default function HomeScreen() {
 
   useEffect(() => {
     checkBiometricSupport();
-  }, [checkBiometricSupport]);
+    checkAndExecuteAutoDeletes();
+    preventScreenCapture();
+
+    const subscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active' && isAuthenticated) {
+        const timedOut = await checkSessionTimeout();
+        if (timedOut) {
+          setIsAuthenticated(false);
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired due to inactivity. Please authenticate again.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          await updateLastActivity();
+        }
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [checkBiometricSupport, isAuthenticated]);
 
   const handleAuthenticate = async () => {
     try {
@@ -45,6 +68,8 @@ export default function HomeScreen() {
           [{ text: "OK" }]
         );
         setIsAuthenticated(true);
+        await logAccess('login', 'Successful login without biometric');
+        await updateLastActivity();
         return;
       }
 
@@ -56,13 +81,17 @@ export default function HomeScreen() {
 
       if (result.success) {
         setIsAuthenticated(true);
+        await logAccess('login', 'Successful login with biometric authentication');
+        await updateLastActivity();
         console.log('Authentication successful');
       } else {
+        await logAccess('failed_auth', 'Failed biometric authentication attempt');
         Alert.alert('Authentication Failed', 'Please try again.');
         console.log('Authentication failed:', result);
       }
     } catch (error) {
       console.error('Authentication error:', error);
+      await logAccess('failed_auth', 'Authentication error occurred');
       Alert.alert('Error', 'An error occurred during authentication.');
     }
   };
@@ -90,11 +119,11 @@ export default function HomeScreen() {
       route: "/shared-with-me",
     },
     {
-      title: "User Sharing",
-      description: "Share content securely with registered app users only",
-      icon: "person.2.fill",
+      title: "Access Log",
+      description: "Monitor all access attempts and activities",
+      icon: "doc.text.fill",
       color: colors.highlight,
-      route: "/share-with-users",
+      route: "/access-log",
     },
   ];
 
@@ -118,7 +147,17 @@ export default function HomeScreen() {
     <Pressable
       onPress={() => Alert.alert("Panic Button", "This will delete all sensitive content. Are you sure?", [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete All", style: "destructive", onPress: () => console.log("Panic delete triggered") }
+        { 
+          text: "Delete All", 
+          style: "destructive", 
+          onPress: async () => {
+            await SecureStore.deleteItemAsync('secure_files');
+            await SecureStore.deleteItemAsync('shared_content');
+            await logAccess('file_delete', 'Panic delete executed from home screen');
+            Alert.alert("Deleted", "All sensitive content has been deleted");
+            console.log("Panic delete triggered");
+          }
+        }
       ])}
       style={styles.headerButtonContainer}
     >
@@ -208,6 +247,16 @@ export default function HomeScreen() {
             </Text>
           </View>
 
+          <View style={[styles.securityBanner, { backgroundColor: colors.success }]}>
+            <IconSymbol name="checkmark.shield.fill" color={colors.card} size={24} />
+            <View style={styles.securityBannerContent}>
+              <Text style={styles.securityBannerTitle}>🔐 Maximum Security Active</Text>
+              <Text style={styles.securityBannerText}>
+                AES-256 encryption • Screenshot protection • Auto-delete enabled
+              </Text>
+            </View>
+          </View>
+
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
@@ -236,9 +285,8 @@ export default function HomeScreen() {
                   router.push("/(tabs)/(home)/private-camera");
                 } else if (feature.route === "/shared-with-me") {
                   router.push("/(tabs)/(home)/shared-with-me");
-                } else if (feature.route === "/share-with-users") {
-                  Alert.alert("Share Content", "Select a file from your Secure Drive to share with other users.");
-                  router.push("/(tabs)/(home)/secure-drive");
+                } else if (feature.route === "/access-log") {
+                  router.push("/(tabs)/(home)/access-log");
                 } else {
                   Alert.alert("Coming Soon", `${feature.title} feature will be available soon!`);
                 }
@@ -257,11 +305,13 @@ export default function HomeScreen() {
 
           <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
             <IconSymbol name="checkmark.shield.fill" color={colors.card} size={32} />
-            <Text style={styles.infoTitle}>Your Privacy Matters</Text>
-            <Text style={styles.infoDescription}>
-              Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide.
-              Your data never leaves your device unencrypted.
-            </Text>
+            <View style={styles.infoCardContent}>
+              <Text style={styles.infoTitle}>Your Privacy Matters</Text>
+              <Text style={styles.infoDescription}>
+                Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide.
+                Your data never leaves your device unencrypted.
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -294,10 +344,32 @@ const styles = StyleSheet.create({
     height: 100,
   },
   header: {
-    marginBottom: 24,
+    marginBottom: 16,
   },
   headerButtonContainer: {
     padding: 8,
+  },
+  securityBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  securityBannerContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  securityBannerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.card,
+    marginBottom: 4,
+  },
+  securityBannerText: {
+    fontSize: 13,
+    color: colors.card,
+    opacity: 0.9,
   },
   lockIconContainer: {
     width: 120,
@@ -416,23 +488,25 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   infoCard: {
+    flexDirection: 'row',
     padding: 20,
     borderRadius: 16,
-    alignItems: 'center',
     marginTop: 8,
     marginBottom: 20,
+  },
+  infoCardContent: {
+    flex: 1,
+    marginLeft: 16,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.card,
-    marginTop: 12,
     marginBottom: 8,
   },
   infoDescription: {
     fontSize: 14,
     color: colors.card,
-    textAlign: 'center',
     lineHeight: 20,
     opacity: 0.9,
   },

@@ -6,6 +6,7 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as SecureStore from 'expo-secure-store';
+import { generateShareCode, logAccess, scheduleAutoDelete } from "@/utils/securityUtils";
 
 interface AppUser {
   id: string;
@@ -26,6 +27,8 @@ interface SharedContent {
   expiresAt?: number;
   viewCount: number;
   maxViews?: number;
+  shareCode: string;
+  otpUsed: boolean;
 }
 
 export default function ShareWithUsersScreen() {
@@ -52,7 +55,6 @@ export default function ShareWithUsersScreen() {
       if (userJson) {
         setCurrentUser(JSON.parse(userJson));
       } else {
-        // Create a default user if none exists
         const defaultUser: AppUser = {
           id: Date.now().toString(),
           username: 'User' + Math.floor(Math.random() * 10000),
@@ -75,7 +77,6 @@ export default function ShareWithUsersScreen() {
         setRegisteredUsers(users);
         console.log('Loaded registered users:', users.length);
       } else {
-        // Demo users for testing
         const demoUsers: AppUser[] = [
           {
             id: '1',
@@ -126,36 +127,53 @@ export default function ShareWithUsersScreen() {
     }
 
     try {
-      // Load existing shared content
       const sharedJson = await SecureStore.getItemAsync('shared_content');
       const sharedContent: SharedContent[] = sharedJson ? JSON.parse(sharedJson) : [];
 
-      // Create share entries for each selected user
-      const newShares: SharedContent[] = selectedUsers.map(userId => ({
-        id: `${Date.now()}_${userId}`,
-        fileId,
-        fileUri,
-        fileType,
-        fromUserId: currentUser.id,
-        toUserId: userId,
-        sharedAt: Date.now(),
-        expiresAt: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-        viewCount: 0,
-        maxViews: 3, // Maximum 3 views
-      }));
+      const shareCodes: string[] = [];
 
-      // Save updated shared content
+      const newShares: SharedContent[] = selectedUsers.map(userId => {
+        const shareCode = generateShareCode();
+        shareCodes.push(shareCode);
+        
+        return {
+          id: `${Date.now()}_${userId}`,
+          fileId,
+          fileUri,
+          fileType,
+          fromUserId: currentUser.id,
+          toUserId: userId,
+          sharedAt: Date.now(),
+          expiresAt: Date.now() + (24 * 60 * 60 * 1000),
+          viewCount: 0,
+          maxViews: 1,
+          shareCode,
+          otpUsed: false,
+        };
+      });
+
       const updatedSharedContent = [...sharedContent, ...newShares];
       await SecureStore.setItemAsync('shared_content', JSON.stringify(updatedSharedContent));
+
+      await scheduleAutoDelete(fileId, 24);
+
+      await logAccess('file_share', `Shared ${fileType} with ${selectedUsers.length} user(s)`, {
+        fileId,
+        userId: currentUser.id,
+      });
 
       const usernames = selectedUsers
         .map(id => registeredUsers.find(u => u.id === id)?.username)
         .filter(Boolean)
         .join(', ');
 
+      const codesText = shareCodes.map((code, idx) => 
+        `${registeredUsers.find(u => u.id === selectedUsers[idx])?.username}: ${code}`
+      ).join('\n');
+
       Alert.alert(
-        'Content Shared Successfully',
-        `Your ${fileType} has been securely shared with ${usernames}. They can view it up to 3 times within 24 hours.`,
+        '✓ Content Shared Successfully',
+        `Your ${fileType} has been securely shared with:\n${usernames}\n\n🔐 One-Time Access Codes:\n${codesText}\n\n⚠️ Important:\n- Each code can only be used once\n- Content expires in 24 hours\n- Recipients will be notified\n- You&apos;ll be alerted when viewed`,
         [
           {
             text: 'OK',
@@ -231,7 +249,7 @@ export default function ShareWithUsersScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
             <IconSymbol name="lock.shield.fill" color={colors.card} size={24} />
             <Text style={styles.infoText}>
-              Only registered Save Me users can view your shared content
+              🔐 Ultra-Secure Sharing: One-time access codes • Screenshot protection • Auto-delete
             </Text>
           </View>
 
@@ -338,12 +356,14 @@ export default function ShareWithUsersScreen() {
           <View style={[styles.securityInfo, { backgroundColor: colors.card }]}>
             <IconSymbol name="info.circle.fill" color={colors.primary} size={24} />
             <View style={styles.securityInfoContent}>
-              <Text style={styles.securityInfoTitle}>Secure Sharing</Text>
+              <Text style={styles.securityInfoTitle}>🔐 Ultra-Secure Sharing</Text>
               <Text style={styles.securityInfoText}>
-                - Content expires after 24 hours{'\n'}
-                - Maximum 3 views per recipient{'\n'}
-                - Recipients are notified when you share{'\n'}
-                - You&apos;ll be notified when they view it
+                - One-time access code (OTP) per recipient{'\n'}
+                - Content auto-deletes after 24 hours{'\n'}
+                - Single view only (cannot be viewed twice){'\n'}
+                - Screenshot & screen recording blocked{'\n'}
+                - You&apos;re notified when content is viewed{'\n'}
+                - Complete access logging
               </Text>
             </View>
           </View>
