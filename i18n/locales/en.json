@@ -1,0 +1,184 @@
+
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "save": "Save",
+    "edit": "Edit",
+    "share": "Share",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning"
+  },
+  "auth": {
+    "welcome": "Welcome to Save Me",
+    "welcomeDescription": "Your privacy is our priority. Authenticate to access your secure content.",
+    "authenticate": "Authenticate",
+    "authenticationFailed": "Authentication Failed",
+    "authenticationFailedMessage": "Please try again.",
+    "biometricNotAvailable": "Biometric Not Available",
+    "biometricNotAvailableMessage": "Please set up biometric authentication on your device for enhanced security.",
+    "sessionExpired": "Session Expired",
+    "sessionExpiredMessage": "Your session has expired due to inactivity. Please authenticate again.",
+    "privacyNote": "🔐 End-to-end encrypted • Zero-knowledge storage"
+  },
+  "home": {
+    "title": "Your Secure Vault",
+    "subtitle": "All your private content is protected with military-grade encryption",
+    "maxSecurityActive": "🔐 Maximum Security Active",
+    "securityFeatures": "AES-256 encryption • Screenshot protection • Auto-delete enabled",
+    "secureFiles": "Secure Files",
+    "sharedItems": "Shared Items",
+    "accessLogs": "Access Logs",
+    "features": "Features",
+    "privacyMatters": "Your Privacy Matters",
+    "privacyDescription": "Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide. Your data never leaves your device unencrypted."
+  },
+  "features": {
+    "secureDrive": {
+      "title": "Secure Drive",
+      "description": "AES-256 encrypted storage for your private media"
+    },
+    "privateCamera": {
+      "title": "Private Camera",
+      "description": "Take photos directly in the app with no external storage"
+    },
+    "sharedWithMe": {
+      "title": "Shared with Me",
+      "description": "View content shared by other registered users"
+    },
+    "accessLog": {
+      "title": "Access Log",
+      "description": "Monitor all access attempts and activities"
+    },
+    "facialRecognition": "Facial Recognition",
+    "autoDelete": "Auto-Delete 24h",
+    "antiScreenshot": "Anti-Screenshot",
+    "viewNotifications": "View Notifications"
+  },
+  "secureDrive": {
+    "title": "Secure Drive",
+    "emptyState": "No secure files yet",
+    "emptyStateDescription": "Take photos with the private camera or import from your gallery to get started",
+    "addPhoto": "Add Photo",
+    "deleteFile": "Delete File",
+    "deleteConfirm": "Are you sure you want to delete this file?",
+    "shareFile": "Share File",
+    "fileDeleted": "File deleted successfully",
+    "errorLoading": "Error loading secure files"
+  },
+  "privateCamera": {
+    "title": "Private Camera",
+    "noPermission": "No access to camera",
+    "requestPermission": "We need your permission to use the camera",
+    "grantPermission": "Grant Permission",
+    "takePicture": "Take Picture",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "flipCamera": "Flip Camera",
+    "photoSaved": "Photo saved securely",
+    "videoSaved": "Video saved securely",
+    "shareContent": "Share Content"
+  },
+  "shareWithUsers": {
+    "title": "Share with Users",
+    "selectUsers": "Select users to share with",
+    "noUsers": "No registered users found",
+    "noUsersDescription": "Add users in the Manage Users section to share content with them",
+    "shareButton": "Share with Selected Users",
+    "shareSuccess": "Content shared successfully",
+    "shareError": "Error sharing content",
+    "lastSeen": "Last seen",
+    "online": "Online",
+    "offline": "Offline",
+    "selectAtLeastOne": "Please select at least one user to share with"
+  },
+  "sharedWithMe": {
+    "title": "Shared with Me",
+    "emptyState": "No shared content",
+    "emptyStateDescription": "Content shared with you by other users will appear here",
+    "from": "From",
+    "expiresIn": "Expires in",
+    "expired": "Expired",
+    "viewsLeft": "views left",
+    "view": "View",
+    "deleteContent": "Delete Content",
+    "deleteConfirm": "Are you sure you want to delete this shared content?",
+    "contentDeleted": "Content deleted successfully"
+  },
+  "manageUsers": {
+    "title": "Manage Users",
+    "currentUser": "Current User",
+    "registeredUsers": "Registered Users",
+    "addNewUser": "Add New User",
+    "username": "Username",
+    "email": "Email",
+    "addUser": "Add User",
+    "deleteUser": "Delete User",
+    "deleteConfirm": "Are you sure you want to delete this user?",
+    "userDeleted": "User deleted successfully",
+    "userAdded": "User added successfully",
+    "fillAllFields": "Please fill in all fields",
+    "noUsers": "No registered users yet"
+  },
+  "accessLog": {
+    "title": "Access Log",
+    "emptyState": "No access logs yet",
+    "emptyStateDescription": "All login attempts and file access will be logged here",
+    "login": "Login",
+    "fileView": "File View",
+    "fileShare": "File Share",
+    "fileDelete": "File Delete",
+    "failedAuth": "Failed Auth"
+  },
+  "profile": {
+    "title": "Profile",
+    "secureUser": "Secure User",
+    "premium": "Premium",
+    "filesProtected": "Files Protected",
+    "shares": "Shares",
+    "secure": "Secure",
+    "security": "Security",
+    "notifications": "Notifications",
+    "account": "Account",
+    "biometricAuth": "Biometric Authentication",
+    "screenshotProtection": "Screenshot Protection",
+    "autoDelete24h": "Auto-Delete (24h)",
+    "ghostMode": "Ghost Mode",
+    "viewNotifications": "View Notifications",
+    "manageUsers": "Manage Users",
+    "accessLog": "Access Log",
+    "changePassword": "Change Password",
+    "twoFactorAuth": "Two-Factor Authentication",
+    "helpSupport": "Help & Support",
+    "panicDelete": "🚨 Panic Delete All Files",
+    "panicDeleteTitle": "⚠️ Panic Delete",
+    "panicDeleteMessage": "This will permanently delete ALL your secure files and shared content. This action cannot be undone!",
+    "deleteEverything": "Delete Everything",
+    "allDeleted": "✓ Deleted",
+    "allDeletedMessage": "All secure files have been permanently deleted",
+    "privacyProtected": "Your Privacy is Protected",
+    "privacyFeatures": "- AES-256 end-to-end encryption\n- Zero-knowledge storage\n- Screenshot & screen recording protection\n- Auto-delete after 24 hours\n- Complete access logging",
+    "version": "Save Me v1.0.0 • Secure Edition",
+    "ghostModeActivated": "Ghost Mode Activated",
+    "ghostModeMessage": "The app icon will be hidden from your home screen. To access the app, use the secret gesture or search for it.",
+    "changePasswordSoon": "This feature will be available soon",
+    "twoFactorSoon": "Two-factor authentication setup coming soon",
+    "helpContact": "Contact support at support@saveme.app",
+    "settings": "Settings",
+    "additionalSettings": "Additional settings coming soon",
+    "language": "Language",
+    "selectLanguage": "Select Language"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français"
+  }
+}

@@ -1,0 +1,184 @@
+
+{
+  "common": {
+    "ok": "OK",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "share": "Partager",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "done": "Terminé",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "warning": "Attention"
+  },
+  "auth": {
+    "welcome": "Bienvenue sur Save Me",
+    "welcomeDescription": "Votre vie privée est notre priorité. Authentifiez-vous pour accéder à votre contenu sécurisé.",
+    "authenticate": "S'authentifier",
+    "authenticationFailed": "Échec de l'authentification",
+    "authenticationFailedMessage": "Veuillez réessayer.",
+    "biometricNotAvailable": "Biométrie non disponible",
+    "biometricNotAvailableMessage": "Veuillez configurer l'authentification biométrique sur votre appareil pour une sécurité renforcée.",
+    "sessionExpired": "Session expirée",
+    "sessionExpiredMessage": "Votre session a expiré en raison d'inactivité. Veuillez vous authentifier à nouveau.",
+    "privacyNote": "🔐 Chiffrement de bout en bout • Stockage à connaissance zéro"
+  },
+  "home": {
+    "title": "Votre coffre-fort sécurisé",
+    "subtitle": "Tout votre contenu privé est protégé par un chiffrement de niveau militaire",
+    "maxSecurityActive": "🔐 Sécurité maximale activée",
+    "securityFeatures": "Chiffrement AES-256 • Protection capture d'écran • Suppression automatique activée",
+    "secureFiles": "Fichiers sécurisés",
+    "sharedItems": "Éléments partagés",
+    "accessLogs": "Journaux d'accès",
+    "features": "Fonctionnalités",
+    "privacyMatters": "Votre vie privée compte",
+    "privacyDescription": "Save Me utilise le chiffrement AES-256, la même norme utilisée par les gouvernements et les banques du monde entier. Vos données ne quittent jamais votre appareil sans être chiffrées."
+  },
+  "features": {
+    "secureDrive": {
+      "title": "Drive sécurisé",
+      "description": "Stockage chiffré AES-256 pour vos médias privés"
+    },
+    "privateCamera": {
+      "title": "Caméra privée",
+      "description": "Prenez des photos directement dans l'application sans stockage externe"
+    },
+    "sharedWithMe": {
+      "title": "Partagé avec moi",
+      "description": "Voir le contenu partagé par d'autres utilisateurs enregistrés"
+    },
+    "accessLog": {
+      "title": "Journal d'accès",
+      "description": "Surveiller toutes les tentatives d'accès et activités"
+    },
+    "facialRecognition": "Reconnaissance faciale",
+    "autoDelete": "Suppression auto 24h",
+    "antiScreenshot": "Anti-capture d'écran",
+    "viewNotifications": "Notifications de vision"
+  },
+  "secureDrive": {
+    "title": "Drive sécurisé",
+    "emptyState": "Aucun fichier sécurisé pour le moment",
+    "emptyStateDescription": "Prenez des photos avec la caméra privée ou importez depuis votre galerie pour commencer",
+    "addPhoto": "Ajouter une photo",
+    "deleteFile": "Supprimer le fichier",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce fichier ?",
+    "shareFile": "Partager le fichier",
+    "fileDeleted": "Fichier supprimé avec succès",
+    "errorLoading": "Erreur lors du chargement des fichiers sécurisés"
+  },
+  "privateCamera": {
+    "title": "Caméra privée",
+    "noPermission": "Pas d'accès à la caméra",
+    "requestPermission": "Nous avons besoin de votre permission pour utiliser la caméra",
+    "grantPermission": "Accorder la permission",
+    "takePicture": "Prendre une photo",
+    "startRecording": "Démarrer l'enregistrement",
+    "stopRecording": "Arrêter l'enregistrement",
+    "flipCamera": "Retourner la caméra",
+    "photoSaved": "Photo enregistrée en toute sécurité",
+    "videoSaved": "Vidéo enregistrée en toute sécurité",
+    "shareContent": "Partager le contenu"
+  },
+  "shareWithUsers": {
+    "title": "Partager avec des utilisateurs",
+    "selectUsers": "Sélectionnez les utilisateurs avec qui partager",
+    "noUsers": "Aucun utilisateur enregistré trouvé",
+    "noUsersDescription": "Ajoutez des utilisateurs dans la section Gérer les utilisateurs pour partager du contenu avec eux",
+    "shareButton": "Partager avec les utilisateurs sélectionnés",
+    "shareSuccess": "Contenu partagé avec succès",
+    "shareError": "Erreur lors du partage du contenu",
+    "lastSeen": "Vu pour la dernière fois",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "selectAtLeastOne": "Veuillez sélectionner au moins un utilisateur avec qui partager"
+  },
+  "sharedWithMe": {
+    "title": "Partagé avec moi",
+    "emptyState": "Aucun contenu partagé",
+    "emptyStateDescription": "Le contenu partagé avec vous par d'autres utilisateurs apparaîtra ici",
+    "from": "De",
+    "expiresIn": "Expire dans",
+    "expired": "Expiré",
+    "viewsLeft": "vues restantes",
+    "view": "Voir",
+    "deleteContent": "Supprimer le contenu",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce contenu partagé ?",
+    "contentDeleted": "Contenu supprimé avec succès"
+  },
+  "manageUsers": {
+    "title": "Gérer les utilisateurs",
+    "currentUser": "Utilisateur actuel",
+    "registeredUsers": "Utilisateurs enregistrés",
+    "addNewUser": "Ajouter un nouvel utilisateur",
+    "username": "Nom d'utilisateur",
+    "email": "Email",
+    "addUser": "Ajouter un utilisateur",
+    "deleteUser": "Supprimer l'utilisateur",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet utilisateur ?",
+    "userDeleted": "Utilisateur supprimé avec succès",
+    "userAdded": "Utilisateur ajouté avec succès",
+    "fillAllFields": "Veuillez remplir tous les champs",
+    "noUsers": "Aucun utilisateur enregistré pour le moment"
+  },
+  "accessLog": {
+    "title": "Journal d'accès",
+    "emptyState": "Aucun journal d'accès pour le moment",
+    "emptyStateDescription": "Toutes les tentatives de connexion et l'accès aux fichiers seront enregistrés ici",
+    "login": "Connexion",
+    "fileView": "Vue du fichier",
+    "fileShare": "Partage de fichier",
+    "fileDelete": "Suppression de fichier",
+    "failedAuth": "Échec d'authentification"
+  },
+  "profile": {
+    "title": "Profil",
+    "secureUser": "Utilisateur sécurisé",
+    "premium": "Premium",
+    "filesProtected": "Fichiers protégés",
+    "shares": "Partages",
+    "secure": "Sécurisé",
+    "security": "Sécurité",
+    "notifications": "Notifications",
+    "account": "Compte",
+    "biometricAuth": "Authentification biométrique",
+    "screenshotProtection": "Protection capture d'écran",
+    "autoDelete24h": "Suppression auto (24h)",
+    "ghostMode": "Mode fantôme",
+    "viewNotifications": "Notifications de vision",
+    "manageUsers": "Gérer les utilisateurs",
+    "accessLog": "Journal d'accès",
+    "changePassword": "Changer le mot de passe",
+    "twoFactorAuth": "Authentification à deux facteurs",
+    "helpSupport": "Aide et support",
+    "panicDelete": "🚨 Suppression panique de tous les fichiers",
+    "panicDeleteTitle": "⚠️ Suppression panique",
+    "panicDeleteMessage": "Cela supprimera définitivement TOUS vos fichiers sécurisés et votre contenu partagé. Cette action ne peut pas être annulée !",
+    "deleteEverything": "Tout supprimer",
+    "allDeleted": "✓ Supprimé",
+    "allDeletedMessage": "Tous les fichiers sécurisés ont été définitivement supprimés",
+    "privacyProtected": "Votre vie privée est protégée",
+    "privacyFeatures": "- Chiffrement AES-256 de bout en bout\n- Stockage à connaissance zéro\n- Protection capture d'écran et enregistrement\n- Suppression automatique après 24 heures\n- Journalisation complète des accès",
+    "version": "Save Me v1.0.0 • Édition sécurisée",
+    "ghostModeActivated": "Mode fantôme activé",
+    "ghostModeMessage": "L'icône de l'application sera masquée de votre écran d'accueil. Pour accéder à l'application, utilisez le geste secret ou recherchez-la.",
+    "changePasswordSoon": "Cette fonctionnalité sera bientôt disponible",
+    "twoFactorSoon": "Configuration de l'authentification à deux facteurs bientôt disponible",
+    "helpContact": "Contactez le support à support@saveme.app",
+    "settings": "Paramètres",
+    "additionalSettings": "Paramètres supplémentaires bientôt disponibles",
+    "language": "Langue",
+    "selectLanguage": "Sélectionner la langue"
+  },
+  "languages": {
+    "en": "English",
+    "fr": "Français"
+  }
+}
