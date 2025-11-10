@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
+import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Image } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
@@ -138,10 +138,13 @@ export default function HomeScreen() {
           />
         )}
         <View style={[commonStyles.container, commonStyles.centerContent]}>
-          <View style={[styles.lockIconContainer, { backgroundColor: colors.primary }]}>
-            <IconSymbol name="lock.shield.fill" color={colors.card} size={60} />
-          </View>
-          <Text style={[commonStyles.title, { textAlign: 'center' }]}>Welcome to Save Me</Text>
+          <Image 
+            source={require('@/assets/images/58b243a3-a5cf-45d2-b7e2-b6b0d2c95648.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          
+          <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 24 }]}>Welcome to Save Me</Text>
           <Text style={[commonStyles.subtitle, { textAlign: 'center', paddingHorizontal: 40 }]}>
             Your privacy is our priority. Authenticate to access your secure content.
           </Text>
@@ -190,6 +193,14 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
+          <View style={styles.logoContainer}>
+            <Image 
+              source={require('@/assets/images/58b243a3-a5cf-45d2-b7e2-b6b0d2c95648.png')}
+              style={styles.logoSmall}
+              resizeMode="contain"
+            />
+          </View>
+
           <View style={styles.header}>
             <Text style={commonStyles.title}>Your Secure Vault</Text>
             <Text style={commonStyles.subtitle}>
@@ -263,6 +274,19 @@ const styles = StyleSheet.create({
   },
   scrollContentWithTabBar: {
     paddingBottom: 100,
+  },
+  logo: {
+    width: 180,
+    height: 180,
+    marginBottom: 8,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  logoSmall: {
+    width: 100,
+    height: 100,
   },
   header: {
     marginBottom: 24,
