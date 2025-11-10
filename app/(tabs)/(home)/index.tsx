@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Stack, useRouter } from "expo-router";
 import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -15,11 +15,7 @@ export default function HomeScreen() {
   const [hasHardware, setHasHardware] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
 
-  useEffect(() => {
-    checkBiometricSupport();
-  }, []);
-
-  const checkBiometricSupport = async () => {
+  const checkBiometricSupport = useCallback(async () => {
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       setHasHardware(compatible);
@@ -34,7 +30,11 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error checking biometric support:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    checkBiometricSupport();
+  }, [checkBiometricSupport]);
 
   const handleAuthenticate = async () => {
     try {
