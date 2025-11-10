@@ -6,6 +6,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import * as SecureStore from 'expo-secure-store';
+import * as Sharing from 'expo-sharing';
 
 interface SecureFile {
   id: string;
@@ -70,6 +71,27 @@ export default function PrivateCameraScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
+  const shareFile = async (fileUri: string, fileType: 'image' | 'video') => {
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      
+      if (!isAvailable) {
+        Alert.alert('Sharing Not Available', 'Sharing is not available on this device');
+        return;
+      }
+
+      await Sharing.shareAsync(fileUri, {
+        dialogTitle: `Share ${fileType === 'image' ? 'Photo' : 'Video'}`,
+        mimeType: fileType === 'image' ? 'image/jpeg' : 'video/mp4',
+      });
+      
+      console.log(`${fileType} shared successfully`);
+    } catch (error) {
+      console.error('Error sharing file:', error);
+      Alert.alert('Error', 'Failed to share file');
+    }
+  };
+
   const takePicture = async () => {
     if (cameraRef.current) {
       try {
@@ -93,10 +115,23 @@ export default function PrivateCameraScreen() {
           files.push(newFile);
           await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
           
-          Alert.alert('Success', 'Photo saved to secure drive', [
-            { text: 'Take Another', style: 'default' },
-            { text: 'View Drive', onPress: () => router.push('/(tabs)/(home)/secure-drive') }
-          ]);
+          Alert.alert(
+            'Success', 
+            'Photo saved to secure drive', 
+            [
+              { text: 'Take Another', style: 'default' },
+              { 
+                text: 'Share', 
+                onPress: () => shareFile(photo.uri, 'image'),
+                style: 'default'
+              },
+              { 
+                text: 'View Drive', 
+                onPress: () => router.push('/(tabs)/(home)/secure-drive'),
+                style: 'default'
+              }
+            ]
+          );
           
           console.log('Photo saved to secure drive:', newFile.id);
         }
@@ -129,7 +164,23 @@ export default function PrivateCameraScreen() {
           files.push(newFile);
           await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
           
-          Alert.alert('Success', 'Video saved to secure drive');
+          Alert.alert(
+            'Success', 
+            'Video saved to secure drive',
+            [
+              { text: 'Take Another', style: 'default' },
+              { 
+                text: 'Share', 
+                onPress: () => shareFile(video.uri, 'video'),
+                style: 'default'
+              },
+              { 
+                text: 'View Drive', 
+                onPress: () => router.push('/(tabs)/(home)/secure-drive'),
+                style: 'default'
+              }
+            ]
+          );
           console.log('Video saved to secure drive:', newFile.id);
         }
       } catch (error) {
