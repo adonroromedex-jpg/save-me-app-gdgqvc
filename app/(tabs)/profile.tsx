@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Switch } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
@@ -9,6 +9,7 @@ import { colors, commonStyles } from "@/styles/commonStyles";
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [biometricEnabled, setBiometricEnabled] = useState(true);
   const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(true);
@@ -56,6 +57,12 @@ export default function ProfileScreen() {
   ];
 
   const accountActions = [
+    {
+      icon: "person.2.fill",
+      label: "Manage Users",
+      color: colors.highlight,
+      action: () => router.push("/(tabs)/(home)/manage-users"),
+    },
     {
       icon: "key.fill",
       label: "Change Password",

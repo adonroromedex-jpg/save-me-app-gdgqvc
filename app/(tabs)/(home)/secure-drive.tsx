@@ -111,6 +111,36 @@ export default function SecureDriveScreen() {
     );
   };
 
+  const shareFile = (file: SecureFile) => {
+    router.push({
+      pathname: '/(tabs)/(home)/share-with-users',
+      params: {
+        fileId: file.id,
+        fileUri: file.uri,
+        fileType: file.type,
+      }
+    });
+  };
+
+  const handleFilePress = (file: SecureFile) => {
+    Alert.alert(
+      'File Options',
+      'What would you like to do with this file?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Share with Users',
+          onPress: () => shareFile(file),
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteFile(file.id),
+        }
+      ]
+    );
+  };
+
   const renderHeaderRight = () => (
     <Pressable
       onPress={pickImage}
@@ -222,6 +252,7 @@ export default function SecureDriveScreen() {
                   <Pressable
                     key={file.id}
                     style={[styles.fileCard, { backgroundColor: colors.card }]}
+                    onPress={() => handleFilePress(file)}
                     onLongPress={() => deleteFile(file.id)}
                   >
                     <Image
@@ -248,7 +279,7 @@ export default function SecureDriveScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
             <IconSymbol name="info.circle.fill" color={colors.card} size={24} />
             <Text style={styles.infoText}>
-              Long press on any file to delete it. All files are automatically encrypted.
+              Tap to share with users or long press to delete. All files are automatically encrypted.
             </Text>
           </View>
         </ScrollView>

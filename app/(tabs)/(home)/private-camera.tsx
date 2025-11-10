@@ -6,7 +6,7 @@ import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import * as SecureStore from 'expo-secure-store';
-import * as Sharing from 'expo-sharing';
+
 
 interface SecureFile {
   id: string;
@@ -71,24 +71,22 @@ export default function PrivateCameraScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
-  const shareFile = async (fileUri: string, fileType: 'image' | 'video') => {
+  const shareFile = async (fileId: string, fileUri: string, fileType: 'image' | 'video') => {
     try {
-      const isAvailable = await Sharing.isAvailableAsync();
-      
-      if (!isAvailable) {
-        Alert.alert('Sharing Not Available', 'Sharing is not available on this device');
-        return;
-      }
-
-      await Sharing.shareAsync(fileUri, {
-        dialogTitle: `Share ${fileType === 'image' ? 'Photo' : 'Video'}`,
-        mimeType: fileType === 'image' ? 'image/jpeg' : 'video/mp4',
+      // Navigate to share with users screen
+      router.push({
+        pathname: '/(tabs)/(home)/share-with-users',
+        params: {
+          fileId,
+          fileUri,
+          fileType,
+        }
       });
       
-      console.log(`${fileType} shared successfully`);
+      console.log(`Opening share screen for ${fileType}`);
     } catch (error) {
       console.error('Error sharing file:', error);
-      Alert.alert('Error', 'Failed to share file');
+      Alert.alert('Error', 'Failed to open share screen');
     }
   };
 
@@ -121,8 +119,8 @@ export default function PrivateCameraScreen() {
             [
               { text: 'Take Another', style: 'default' },
               { 
-                text: 'Share', 
-                onPress: () => shareFile(photo.uri, 'image'),
+                text: 'Share with Users', 
+                onPress: () => shareFile(newFile.id, photo.uri, 'image'),
                 style: 'default'
               },
               { 
@@ -170,8 +168,8 @@ export default function PrivateCameraScreen() {
             [
               { text: 'Take Another', style: 'default' },
               { 
-                text: 'Share', 
-                onPress: () => shareFile(video.uri, 'video'),
+                text: 'Share with Users', 
+                onPress: () => shareFile(newFile.id, video.uri, 'video'),
                 style: 'default'
               },
               { 

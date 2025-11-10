@@ -83,18 +83,18 @@ export default function HomeScreen() {
       route: "/private-camera",
     },
     {
-      title: "Controlled Sharing",
-      description: "Share with unique codes and time-limited access",
-      icon: "square.and.arrow.up.fill",
+      title: "Shared with Me",
+      description: "View content shared by other registered users",
+      icon: "tray.fill",
       color: colors.accent,
-      route: "/controlled-sharing",
+      route: "/shared-with-me",
     },
     {
-      title: "Access Log",
-      description: "Track all access to your private content",
-      icon: "list.bullet.clipboard.fill",
+      title: "User Sharing",
+      description: "Share content securely with registered app users only",
+      icon: "person.2.fill",
       color: colors.highlight,
-      route: "/access-log",
+      route: "/share-with-users",
     },
   ];
 
@@ -234,6 +234,11 @@ export default function HomeScreen() {
                   router.push("/(tabs)/(home)/secure-drive");
                 } else if (feature.route === "/private-camera") {
                   router.push("/(tabs)/(home)/private-camera");
+                } else if (feature.route === "/shared-with-me") {
+                  router.push("/(tabs)/(home)/shared-with-me");
+                } else if (feature.route === "/share-with-users") {
+                  Alert.alert("Share Content", "Select a file from your Secure Drive to share with other users.");
+                  router.push("/(tabs)/(home)/secure-drive");
                 } else {
                   Alert.alert("Coming Soon", `${feature.title} feature will be available soon!`);
                 }
