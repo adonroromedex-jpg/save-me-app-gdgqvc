@@ -8,6 +8,7 @@ import { colors, commonStyles } from "@/styles/commonStyles";
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import { checkSessionTimeout, updateLastActivity, logAccess, checkAndExecuteAutoDeletes, preventScreenCapture } from "@/utils/securityUtils";
+import i18n from "@/i18n";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -34,6 +35,7 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    loadLanguagePreference();
     checkBiometricSupport();
     checkAndExecuteAutoDeletes();
     preventScreenCapture();
@@ -44,9 +46,9 @@ export default function HomeScreen() {
         if (timedOut) {
           setIsAuthenticated(false);
           Alert.alert(
-            'Session Expired',
-            'Your session has expired due to inactivity. Please authenticate again.',
-            [{ text: 'OK' }]
+            i18n.t('auth.sessionExpired'),
+            i18n.t('auth.sessionExpiredMessage'),
+            [{ text: i18n.t('common.ok') }]
           );
         } else {
           await updateLastActivity();
@@ -59,13 +61,24 @@ export default function HomeScreen() {
     };
   }, [checkBiometricSupport, isAuthenticated]);
 
+  const loadLanguagePreference = async () => {
+    try {
+      const savedLanguage = await SecureStore.getItemAsync('app_language');
+      if (savedLanguage) {
+        i18n.locale = savedLanguage;
+      }
+    } catch (error) {
+      console.error('Error loading language preference:', error);
+    }
+  };
+
   const handleAuthenticate = async () => {
     try {
       if (!hasHardware || !isEnrolled) {
         Alert.alert(
-          "Biometric Not Available",
-          "Please set up biometric authentication on your device for enhanced security.",
-          [{ text: "OK" }]
+          i18n.t('auth.biometricNotAvailable'),
+          i18n.t('auth.biometricNotAvailableMessage'),
+          [{ text: i18n.t('common.ok') }]
         );
         setIsAuthenticated(true);
         await logAccess('login', 'Successful login without biometric');
@@ -74,7 +87,7 @@ export default function HomeScreen() {
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access Save Me',
+        promptMessage: i18n.t('auth.authenticate'),
         fallbackLabel: 'Use Passcode',
         disableDeviceFallback: false,
       });
@@ -86,41 +99,41 @@ export default function HomeScreen() {
         console.log('Authentication successful');
       } else {
         await logAccess('failed_auth', 'Failed biometric authentication attempt');
-        Alert.alert('Authentication Failed', 'Please try again.');
+        Alert.alert(i18n.t('auth.authenticationFailed'), i18n.t('auth.authenticationFailedMessage'));
         console.log('Authentication failed:', result);
       }
     } catch (error) {
       console.error('Authentication error:', error);
       await logAccess('failed_auth', 'Authentication error occurred');
-      Alert.alert('Error', 'An error occurred during authentication.');
+      Alert.alert(i18n.t('common.error'), 'An error occurred during authentication.');
     }
   };
 
   const features = [
     {
-      title: "Secure Drive",
-      description: "AES-256 encrypted storage for your private media",
+      title: i18n.t('features.secureDrive.title'),
+      description: i18n.t('features.secureDrive.description'),
       icon: "lock.shield.fill",
       color: colors.primary,
       route: "/secure-drive",
     },
     {
-      title: "Private Camera",
-      description: "Take photos directly in the app with no external storage",
+      title: i18n.t('features.privateCamera.title'),
+      description: i18n.t('features.privateCamera.description'),
       icon: "camera.fill",
       color: colors.secondary,
       route: "/private-camera",
     },
     {
-      title: "Shared with Me",
-      description: "View content shared by other registered users",
+      title: i18n.t('features.sharedWithMe.title'),
+      description: i18n.t('features.sharedWithMe.description'),
       icon: "tray.fill",
       color: colors.accent,
       route: "/shared-with-me",
     },
     {
-      title: "Access Log",
-      description: "Monitor all access attempts and activities",
+      title: i18n.t('features.accessLog.title'),
+      description: i18n.t('features.accessLog.description'),
       icon: "doc.text.fill",
       color: colors.highlight,
       route: "/access-log",
@@ -128,15 +141,15 @@ export default function HomeScreen() {
   ];
 
   const securityFeatures = [
-    { icon: "faceid", text: "Facial Recognition" },
-    { icon: "timer", text: "Auto-Delete 24h" },
-    { icon: "eye.slash.fill", text: "Anti-Screenshot" },
-    { icon: "bell.badge.fill", text: "View Notifications" },
+    { icon: "faceid", text: i18n.t('features.facialRecognition') },
+    { icon: "timer", text: i18n.t('features.autoDelete') },
+    { icon: "eye.slash.fill", text: i18n.t('features.antiScreenshot') },
+    { icon: "bell.badge.fill", text: i18n.t('features.viewNotifications') },
   ];
 
   const renderHeaderRight = () => (
     <Pressable
-      onPress={() => Alert.alert("Settings", "Settings feature coming soon")}
+      onPress={() => Alert.alert(i18n.t('profile.settings'), i18n.t('profile.additionalSettings'))}
       style={styles.headerButtonContainer}
     >
       <IconSymbol name="gear" color={colors.primary} />
@@ -146,15 +159,15 @@ export default function HomeScreen() {
   const renderHeaderLeft = () => (
     <Pressable
       onPress={() => Alert.alert("Panic Button", "This will delete all sensitive content. Are you sure?", [
-        { text: "Cancel", style: "cancel" },
+        { text: i18n.t('common.cancel'), style: "cancel" },
         { 
-          text: "Delete All", 
+          text: i18n.t('common.delete'), 
           style: "destructive", 
           onPress: async () => {
             await SecureStore.deleteItemAsync('secure_files');
             await SecureStore.deleteItemAsync('shared_content');
             await logAccess('file_delete', 'Panic delete executed from home screen');
-            Alert.alert("Deleted", "All sensitive content has been deleted");
+            Alert.alert(i18n.t('profile.allDeleted'), i18n.t('profile.allDeletedMessage'));
             console.log("Panic delete triggered");
           }
         }
@@ -183,9 +196,9 @@ export default function HomeScreen() {
             resizeMode="contain"
           />
           
-          <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 24 }]}>Welcome to Save Me</Text>
+          <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 24 }]}>{i18n.t('auth.welcome')}</Text>
           <Text style={[commonStyles.subtitle, { textAlign: 'center', paddingHorizontal: 40 }]}>
-            Your privacy is our priority. Authenticate to access your secure content.
+            {i18n.t('auth.welcomeDescription')}
           </Text>
           
           <View style={styles.securityBadgesContainer}>
@@ -202,11 +215,11 @@ export default function HomeScreen() {
             onPress={handleAuthenticate}
           >
             <IconSymbol name="faceid" color={colors.card} size={24} />
-            <Text style={styles.authButtonText}>Authenticate</Text>
+            <Text style={styles.authButtonText}>{i18n.t('auth.authenticate')}</Text>
           </Pressable>
 
           <Text style={styles.privacyText}>
-            🔐 End-to-end encrypted • Zero-knowledge storage
+            {i18n.t('auth.privacyNote')}
           </Text>
         </View>
       </>
@@ -241,18 +254,18 @@ export default function HomeScreen() {
           </View>
 
           <View style={styles.header}>
-            <Text style={commonStyles.title}>Your Secure Vault</Text>
+            <Text style={commonStyles.title}>{i18n.t('home.title')}</Text>
             <Text style={commonStyles.subtitle}>
-              All your private content is protected with military-grade encryption
+              {i18n.t('home.subtitle')}
             </Text>
           </View>
 
           <View style={[styles.securityBanner, { backgroundColor: colors.success }]}>
             <IconSymbol name="checkmark.shield.fill" color={colors.card} size={24} />
             <View style={styles.securityBannerContent}>
-              <Text style={styles.securityBannerTitle}>🔐 Maximum Security Active</Text>
+              <Text style={styles.securityBannerTitle}>{i18n.t('home.maxSecurityActive')}</Text>
               <Text style={styles.securityBannerText}>
-                AES-256 encryption • Screenshot protection • Auto-delete enabled
+                {i18n.t('home.securityFeatures')}
               </Text>
             </View>
           </View>
@@ -260,19 +273,19 @@ export default function HomeScreen() {
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Secure Files</Text>
+              <Text style={styles.statLabel}>{i18n.t('home.secureFiles')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Shared Items</Text>
+              <Text style={styles.statLabel}>{i18n.t('home.sharedItems')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>Access Logs</Text>
+              <Text style={styles.statLabel}>{i18n.t('home.accessLogs')}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Features</Text>
+          <Text style={styles.sectionTitle}>{i18n.t('home.features')}</Text>
           
           {features.map((feature, index) => (
             <Pressable
@@ -306,10 +319,9 @@ export default function HomeScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
             <IconSymbol name="checkmark.shield.fill" color={colors.card} size={32} />
             <View style={styles.infoCardContent}>
-              <Text style={styles.infoTitle}>Your Privacy Matters</Text>
+              <Text style={styles.infoTitle}>{i18n.t('home.privacyMatters')}</Text>
               <Text style={styles.infoDescription}>
-                Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide.
-                Your data never leaves your device unencrypted.
+                {i18n.t('home.privacyDescription')}
               </Text>
             </View>
           </View>
