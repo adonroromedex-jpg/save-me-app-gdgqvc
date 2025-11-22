@@ -1,12 +1,11 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { Stack, useRouter } from "expo-router";
 import { View, Text, StyleSheet, Pressable, Alert, Platform } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { IconSymbol } from "@/components/IconSymbol";
 import { colors } from "@/styles/commonStyles";
 import * as SecureStore from 'expo-secure-store';
-
 
 interface SecureFile {
   id: string;
@@ -14,56 +13,28 @@ interface SecureFile {
   type: 'image' | 'video';
   timestamp: number;
   encrypted: boolean;
+  isReceivedContent?: boolean;
 }
 
 export default function PrivateCameraScreen() {
-  const router = useRouter();
-  const [facing, setFacing] = useState<CameraType>('back');
+  const cameraRef = useRef<any>(null);
   const [permission, requestPermission] = useCameraPermissions();
+  const [facing, setFacing] = useState<CameraType>('back');
   const [isRecording, setIsRecording] = useState(false);
-  const cameraRef = useRef<CameraView>(null);
+  const router = useRouter();
 
   if (!permission) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={styles.message}>Requesting camera permission...</Text>
-      </View>
-    );
+    return <View style={styles.container} />;
   }
 
   if (!permission.granted) {
     return (
-      <>
-        {Platform.OS === 'ios' && (
-          <Stack.Screen
-            options={{
-              title: "Private Camera",
-              headerShown: false,
-            }}
-          />
-        )}
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-          <View style={styles.permissionContainer}>
-            <IconSymbol name="camera.fill" color={colors.textSecondary} size={64} />
-            <Text style={styles.permissionTitle}>Camera Access Required</Text>
-            <Text style={styles.permissionMessage}>
-              Save Me needs access to your camera to take private photos and videos that are stored securely.
-            </Text>
-            <Pressable
-              style={[styles.permissionButton, { backgroundColor: colors.primary }]}
-              onPress={requestPermission}
-            >
-              <Text style={styles.permissionButtonText}>Grant Permission</Text>
-            </Pressable>
-            <Pressable
-              style={styles.backButton}
-              onPress={() => router.back()}
-            >
-              <Text style={[styles.backButtonText, { color: colors.primary }]}>Go Back</Text>
-            </Pressable>
-          </View>
-        </View>
-      </>
+      <View style={styles.container}>
+        <Text style={styles.message}>We need your permission to show the camera</Text>
+        <Pressable onPress={requestPermission} style={styles.permissionButton}>
+          <Text style={styles.permissionButtonText}>Grant Permission</Text>
+        </Pressable>
+      </View>
     );
   }
 
@@ -71,23 +42,15 @@ export default function PrivateCameraScreen() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   };
 
-  const shareFile = async (fileId: string, fileUri: string, fileType: 'image' | 'video') => {
-    try {
-      // Navigate to share with users screen
-      router.push({
-        pathname: '/(tabs)/(home)/share-with-users',
-        params: {
-          fileId,
-          fileUri,
-          fileType,
-        }
-      });
-      
-      console.log(`Opening share screen for ${fileType}`);
-    } catch (error) {
-      console.error('Error sharing file:', error);
-      Alert.alert('Error', 'Failed to open share screen');
-    }
+  const shareFile = (fileId: string, fileUri: string, fileType: 'image' | 'video') => {
+    router.push({
+      pathname: '/(tabs)/(home)/share-with-users',
+      params: {
+        fileId,
+        fileUri,
+        fileType,
+      }
+    });
   };
 
   const takePicture = async () => {
@@ -97,45 +60,41 @@ export default function PrivateCameraScreen() {
           quality: 1,
         });
 
-        if (photo) {
-          // Save to secure storage
-          const storedFiles = await SecureStore.getItemAsync('secure_files');
-          const files: SecureFile[] = storedFiles ? JSON.parse(storedFiles) : [];
-          
-          const newFile: SecureFile = {
-            id: Date.now().toString(),
-            uri: photo.uri,
-            type: 'image',
-            timestamp: Date.now(),
-            encrypted: true,
-          };
+        const filesJson = await SecureStore.getItemAsync('secure_files');
+        const files: SecureFile[] = filesJson ? JSON.parse(filesJson) : [];
 
-          files.push(newFile);
-          await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
-          
-          Alert.alert(
-            'Success', 
-            'Photo saved to secure drive', 
-            [
-              { text: 'Take Another', style: 'default' },
-              { 
-                text: 'Share with Users', 
-                onPress: () => shareFile(newFile.id, photo.uri, 'image'),
-                style: 'default'
-              },
-              { 
-                text: 'View Drive', 
-                onPress: () => router.push('/(tabs)/(home)/secure-drive'),
-                style: 'default'
-              }
-            ]
-          );
-          
-          console.log('Photo saved to secure drive:', newFile.id);
-        }
+        const newFile: SecureFile = {
+          id: Date.now().toString(),
+          uri: photo.uri,
+          type: 'image',
+          timestamp: Date.now(),
+          encrypted: true,
+          isReceivedContent: false, // User's own content from camera
+        };
+
+        files.push(newFile);
+        await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
+
+        Alert.alert(
+          '✓ Photo Captured',
+          'Your photo has been securely saved to your encrypted drive.',
+          [
+            { text: 'Take Another', style: 'cancel' },
+            { 
+              text: 'Share', 
+              onPress: () => shareFile(newFile.id, newFile.uri, newFile.type)
+            },
+            { 
+              text: 'View Drive', 
+              onPress: () => router.push('/(tabs)/(home)/secure-drive')
+            }
+          ]
+        );
+
+        console.log('Photo saved:', newFile.id);
       } catch (error) {
         console.error('Error taking picture:', error);
-        Alert.alert('Error', 'Failed to take picture');
+        Alert.alert('Error', 'Failed to capture photo');
       }
     }
   };
@@ -144,43 +103,42 @@ export default function PrivateCameraScreen() {
     if (cameraRef.current && !isRecording) {
       try {
         setIsRecording(true);
-        const video = await cameraRef.current.recordAsync();
-        
-        if (video) {
-          // Save to secure storage
-          const storedFiles = await SecureStore.getItemAsync('secure_files');
-          const files: SecureFile[] = storedFiles ? JSON.parse(storedFiles) : [];
-          
-          const newFile: SecureFile = {
-            id: Date.now().toString(),
-            uri: video.uri,
-            type: 'video',
-            timestamp: Date.now(),
-            encrypted: true,
-          };
+        const video = await cameraRef.current.recordAsync({
+          maxDuration: 60,
+        });
 
-          files.push(newFile);
-          await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
-          
-          Alert.alert(
-            'Success', 
-            'Video saved to secure drive',
-            [
-              { text: 'Take Another', style: 'default' },
-              { 
-                text: 'Share with Users', 
-                onPress: () => shareFile(newFile.id, video.uri, 'video'),
-                style: 'default'
-              },
-              { 
-                text: 'View Drive', 
-                onPress: () => router.push('/(tabs)/(home)/secure-drive'),
-                style: 'default'
-              }
-            ]
-          );
-          console.log('Video saved to secure drive:', newFile.id);
-        }
+        const filesJson = await SecureStore.getItemAsync('secure_files');
+        const files: SecureFile[] = filesJson ? JSON.parse(filesJson) : [];
+
+        const newFile: SecureFile = {
+          id: Date.now().toString(),
+          uri: video.uri,
+          type: 'video',
+          timestamp: Date.now(),
+          encrypted: true,
+          isReceivedContent: false, // User's own content from camera
+        };
+
+        files.push(newFile);
+        await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
+
+        Alert.alert(
+          '✓ Video Recorded',
+          'Your video has been securely saved to your encrypted drive.',
+          [
+            { text: 'Record Another', style: 'cancel' },
+            { 
+              text: 'Share', 
+              onPress: () => shareFile(newFile.id, newFile.uri, newFile.type)
+            },
+            { 
+              text: 'View Drive', 
+              onPress: () => router.push('/(tabs)/(home)/secure-drive')
+            }
+          ]
+        );
+
+        console.log('Video saved:', newFile.id);
       } catch (error) {
         console.error('Error recording video:', error);
         Alert.alert('Error', 'Failed to record video');
@@ -212,7 +170,11 @@ export default function PrivateCameraScreen() {
         <Stack.Screen
           options={{
             title: "Private Camera",
-            headerShown: false,
+            headerLeft: renderHeaderLeft,
+            headerStyle: {
+              backgroundColor: 'transparent',
+            },
+            headerTransparent: true,
           }}
         />
       )}
@@ -224,20 +186,24 @@ export default function PrivateCameraScreen() {
         >
           <View style={styles.topBar}>
             <Pressable
-              style={styles.topButton}
               onPress={() => router.back()}
+              style={styles.topButton}
             >
               <IconSymbol name="xmark" color={colors.card} size={24} />
             </Pressable>
-            <View style={[styles.encryptedBadge, { backgroundColor: colors.success }]}>
-              <IconSymbol name="lock.fill" color={colors.card} size={14} />
-              <Text style={styles.encryptedText}>Encrypted</Text>
+            <View style={[styles.recordingIndicator, isRecording && styles.recordingActive]}>
+              {isRecording && (
+                <>
+                  <View style={styles.recordingDot} />
+                  <Text style={styles.recordingText}>REC</Text>
+                </>
+              )}
             </View>
             <Pressable
-              style={styles.topButton}
               onPress={toggleCameraFacing}
+              style={styles.topButton}
             >
-              <IconSymbol name="arrow.triangle.2.circlepath.camera.fill" color={colors.card} size={24} />
+              <IconSymbol name="arrow.triangle.2.circlepath.camera" color={colors.card} size={24} />
             </Pressable>
           </View>
 
@@ -247,29 +213,35 @@ export default function PrivateCameraScreen() {
                 style={styles.galleryButton}
                 onPress={() => router.push('/(tabs)/(home)/secure-drive')}
               >
-                <IconSymbol name="photo.fill.on.rectangle.fill" color={colors.card} size={28} />
+                <IconSymbol name="photo.stack" color={colors.card} size={28} />
               </Pressable>
 
               <Pressable
                 style={[styles.captureButton, isRecording && styles.captureButtonRecording]}
                 onPress={takePicture}
-                onLongPress={startRecording}
-                onPressOut={stopRecording}
+                disabled={isRecording}
               >
                 <View style={[styles.captureButtonInner, isRecording && styles.captureButtonInnerRecording]} />
               </Pressable>
 
               <Pressable
                 style={styles.videoButton}
-                onPress={() => Alert.alert('Video Mode', 'Long press the capture button to record video')}
+                onPress={isRecording ? stopRecording : startRecording}
               >
-                <IconSymbol name="video.fill" color={colors.card} size={28} />
+                <IconSymbol 
+                  name={isRecording ? "stop.circle.fill" : "video.circle.fill"} 
+                  color={isRecording ? colors.danger : colors.card} 
+                  size={28} 
+                />
               </Pressable>
             </View>
 
-            <Text style={styles.instructionText}>
-              {isRecording ? 'Recording... Release to stop' : 'Tap for photo • Long press for video'}
-            </Text>
+            <View style={styles.infoContainer}>
+              <IconSymbol name="lock.shield.fill" color={colors.card} size={16} />
+              <Text style={styles.infoText}>
+                Content captured here is encrypted and never saved to your device gallery
+              </Text>
+            </View>
           </View>
         </CameraView>
       </View>
@@ -280,54 +252,27 @@ export default function PrivateCameraScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: colors.background,
   },
   message: {
     textAlign: 'center',
     paddingBottom: 10,
     color: colors.text,
   },
-  camera: {
-    flex: 1,
-  },
-  permissionContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 40,
-  },
-  permissionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    marginTop: 24,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  permissionMessage: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
   permissionButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    backgroundColor: colors.primary,
+    padding: 16,
     borderRadius: 12,
-    marginBottom: 16,
+    marginHorizontal: 20,
   },
   permissionButtonText: {
     color: colors.card,
+    textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
   },
-  backButton: {
-    paddingVertical: 12,
-  },
-  backButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  camera: {
+    flex: 1,
   },
   headerButtonContainer: {
     padding: 8,
@@ -336,8 +281,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 20,
   },
   topButton: {
@@ -348,38 +293,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  encryptedBadge: {
+  recordingIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 16,
+    minWidth: 60,
+    justifyContent: 'center',
   },
-  encryptedText: {
+  recordingActive: {
+    backgroundColor: colors.danger,
+  },
+  recordingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.card,
+    marginRight: 6,
+  },
+  recordingText: {
     color: colors.card,
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '700',
   },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 30,
-    paddingTop: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 20,
   },
   controlsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
     paddingHorizontal: 40,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   galleryButton: {
     width: 50,
     height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -391,31 +348,45 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 4,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   captureButtonRecording: {
-    borderColor: colors.danger,
+    opacity: 0.5,
   },
   captureButtonInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.card,
   },
   captureButtonInnerRecording: {
-    borderRadius: 8,
+    width: 30,
+    height: 30,
+    borderRadius: 4,
     backgroundColor: colors.danger,
   },
   videoButton: {
     width: 50,
     height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  instructionText: {
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginHorizontal: 20,
+    borderRadius: 12,
+  },
+  infoText: {
     color: colors.card,
-    fontSize: 14,
-    textAlign: 'center',
-    opacity: 0.8,
+    fontSize: 12,
+    marginLeft: 8,
+    flex: 1,
   },
 });

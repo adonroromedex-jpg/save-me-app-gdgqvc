@@ -29,6 +29,17 @@ interface SharedContent {
   maxViews?: number;
   shareCode: string;
   otpUsed: boolean;
+  isReceivedContent: boolean; // Flag to prevent re-sharing
+  originalOwnerId?: string; // Track the original owner
+}
+
+interface SecureFile {
+  id: string;
+  uri: string;
+  type: 'image' | 'video';
+  timestamp: number;
+  encrypted: boolean;
+  isReceivedContent?: boolean; // Flag to mark files received from others
 }
 
 export default function ShareWithUsersScreen() {
@@ -39,6 +50,7 @@ export default function ShareWithUsersScreen() {
   const [registeredUsers, setRegisteredUsers] = useState<AppUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
+  const [isReceivedContent, setIsReceivedContent] = useState(false);
 
   const fileId = params.fileId as string;
   const fileUri = params.fileUri as string;
@@ -47,7 +59,42 @@ export default function ShareWithUsersScreen() {
   useEffect(() => {
     loadCurrentUser();
     loadRegisteredUsers();
+    checkIfReceivedContent();
   }, []);
+
+  const checkIfReceivedContent = async () => {
+    try {
+      // Check if this file is from received content
+      const filesJson = await SecureStore.getItemAsync('secure_files');
+      if (filesJson) {
+        const files: SecureFile[] = JSON.parse(filesJson);
+        const file = files.find(f => f.id === fileId);
+        if (file && file.isReceivedContent) {
+          setIsReceivedContent(true);
+          // Show blocking alert immediately
+          Alert.alert(
+            '🚫 Sharing Blocked',
+            'This content was shared with you by another user and cannot be forwarded.\n\n🔒 Security Restrictions:\n• No sharing with other users\n• No export to other apps\n• No saving to device gallery\n• No copying or forwarding\n\nThis is a core security feature of Save Me to protect the privacy of the original sender.',
+            [
+              {
+                text: 'I Understand',
+                onPress: () => router.back(),
+              }
+            ],
+            { cancelable: false }
+          );
+
+          // Log the blocked attempt
+          await logAccess('file_share', 'Blocked attempt to share received content', {
+            fileId,
+            userId: currentUser?.id,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking if received content:', error);
+    }
+  };
 
   const loadCurrentUser = async () => {
     try {
@@ -106,6 +153,15 @@ export default function ShareWithUsersScreen() {
   };
 
   const toggleUserSelection = (userId: string) => {
+    if (isReceivedContent) {
+      Alert.alert(
+        '🚫 Action Blocked',
+        'This content cannot be shared as it was received from another user.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     setSelectedUsers(prev => {
       if (prev.includes(userId)) {
         return prev.filter(id => id !== userId);
@@ -116,6 +172,16 @@ export default function ShareWithUsersScreen() {
   };
 
   const shareWithSelectedUsers = async () => {
+    // Double-check if this is received content
+    if (isReceivedContent) {
+      Alert.alert(
+        '🚫 Sharing Blocked',
+        'This content was shared with you and cannot be forwarded to others.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     if (selectedUsers.length === 0) {
       Alert.alert('No Users Selected', 'Please select at least one user to share with.');
       return;
@@ -149,6 +215,8 @@ export default function ShareWithUsersScreen() {
           maxViews: 1,
           shareCode,
           otpUsed: false,
+          isReceivedContent: true, // Mark as received content for recipients
+          originalOwnerId: currentUser.id,
         };
       });
 
@@ -173,7 +241,7 @@ export default function ShareWithUsersScreen() {
 
       Alert.alert(
         '✓ Content Shared Successfully',
-        `Your ${fileType} has been securely shared with:\n${usernames}\n\n🔐 One-Time Access Codes:\n${codesText}\n\n⚠️ Important:\n- Each code can only be used once\n- Content expires in 24 hours\n- Recipients will be notified\n- You&apos;ll be alerted when viewed`,
+        `Your ${fileType} has been securely shared with:\n${usernames}\n\n🔐 One-Time Access Codes:\n${codesText}\n\n⚠️ Important:\n- Each code can only be used once\n- Content expires in 24 hours\n- Recipients CANNOT share this with others\n- Recipients CANNOT export to other apps\n- You&apos;ll be alerted when viewed\n\n🛡️ Recipients are protected by Save Me security protocols.`,
         [
           {
             text: 'OK',
@@ -222,16 +290,70 @@ export default function ShareWithUsersScreen() {
     <Pressable
       onPress={shareWithSelectedUsers}
       style={styles.headerButtonContainer}
-      disabled={selectedUsers.length === 0}
+      disabled={selectedUsers.length === 0 || isReceivedContent}
     >
       <Text style={[
         styles.shareButtonText,
-        { color: selectedUsers.length > 0 ? colors.primary : colors.textSecondary }
+        { color: (selectedUsers.length > 0 && !isReceivedContent) ? colors.primary : colors.textSecondary }
       ]}>
         Share
       </Text>
     </Pressable>
   );
+
+  // If this is received content, show blocking screen
+  if (isReceivedContent) {
+    return (
+      <>
+        {Platform.OS === 'ios' && (
+          <Stack.Screen
+            options={{
+              title: "Sharing Blocked",
+              headerLeft: renderHeaderLeft,
+            }}
+          />
+        )}
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+          <View style={styles.blockedContainer}>
+            <View style={[styles.blockedIconContainer, { backgroundColor: colors.danger }]}>
+              <IconSymbol name="lock.shield.fill" color={colors.card} size={64} />
+            </View>
+            <Text style={styles.blockedTitle}>🚫 Sharing Not Allowed</Text>
+            <Text style={styles.blockedDescription}>
+              This content was shared with you by another user and is protected by Save Me security protocols.
+            </Text>
+            <View style={[styles.restrictionsCard, { backgroundColor: colors.card }]}>
+              <Text style={styles.restrictionsTitle}>🔒 Active Restrictions:</Text>
+              <View style={styles.restrictionsList}>
+                <View style={styles.restrictionItem}>
+                  <IconSymbol name="xmark.circle.fill" color={colors.danger} size={20} />
+                  <Text style={styles.restrictionText}>Cannot share with other users</Text>
+                </View>
+                <View style={styles.restrictionItem}>
+                  <IconSymbol name="xmark.circle.fill" color={colors.danger} size={20} />
+                  <Text style={styles.restrictionText}>Cannot export to other apps</Text>
+                </View>
+                <View style={styles.restrictionItem}>
+                  <IconSymbol name="xmark.circle.fill" color={colors.danger} size={20} />
+                  <Text style={styles.restrictionText}>Cannot save to device gallery</Text>
+                </View>
+                <View style={styles.restrictionItem}>
+                  <IconSymbol name="xmark.circle.fill" color={colors.danger} size={20} />
+                  <Text style={styles.restrictionText}>Cannot copy or forward</Text>
+                </View>
+              </View>
+            </View>
+            <Pressable
+              style={[styles.backButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.back()}
+            >
+              <Text style={styles.backButtonText}>Go Back</Text>
+            </Pressable>
+          </View>
+        </View>
+      </>
+    );
+  }
 
   return (
     <>
@@ -249,7 +371,7 @@ export default function ShareWithUsersScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
             <IconSymbol name="lock.shield.fill" color={colors.card} size={24} />
             <Text style={styles.infoText}>
-              🔐 Ultra-Secure Sharing: One-time access codes • Screenshot protection • Auto-delete
+              🔐 Ultra-Secure Sharing: One-time access codes • Screenshot protection • Auto-delete • No re-sharing
             </Text>
           </View>
 
@@ -362,6 +484,8 @@ export default function ShareWithUsersScreen() {
                 - Content auto-deletes after 24 hours{'\n'}
                 - Single view only (cannot be viewed twice){'\n'}
                 - Screenshot & screen recording blocked{'\n'}
+                - Recipients CANNOT share with others{'\n'}
+                - Recipients CANNOT export to other apps{'\n'}
                 - You&apos;re notified when content is viewed{'\n'}
                 - Complete access logging
               </Text>
@@ -584,5 +708,67 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.card,
     marginLeft: 8,
+  },
+  blockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  blockedIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  blockedTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  blockedDescription: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  restrictionsCard: {
+    width: '100%',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 32,
+  },
+  restrictionsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  restrictionsList: {
+    gap: 12,
+  },
+  restrictionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  restrictionText: {
+    fontSize: 15,
+    color: colors.text,
+    marginLeft: 12,
+  },
+  backButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.card,
   },
 });
