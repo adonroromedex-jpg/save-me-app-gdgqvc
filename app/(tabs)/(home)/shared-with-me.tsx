@@ -6,7 +6,6 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as SecureStore from 'expo-secure-store';
-import { preventScreenCapture, logAccess } from "@/utils/securityUtils";
 
 interface AppUser {
   id: string;
@@ -26,7 +25,6 @@ interface SharedContent {
   expiresAt?: number;
   viewCount: number;
   maxViews?: number;
-  isReceivedContent: boolean; // Flag to mark content as received (non-shareable)
 }
 
 export default function SharedWithMeScreen() {
@@ -58,10 +56,8 @@ export default function SharedWithMeScreen() {
         const sharedJson = await SecureStore.getItemAsync('shared_content');
         if (sharedJson) {
           const allShared: SharedContent[] = JSON.parse(sharedJson);
-          // Filter content shared with current user and mark as received
-          const myShared = allShared
-            .filter(item => item.toUserId === user.id)
-            .map(item => ({ ...item, isReceivedContent: true }));
+          // Filter content shared with current user
+          const myShared = allShared.filter(item => item.toUserId === user.id);
           setSharedContent(myShared);
           console.log('Loaded shared content:', myShared.length);
         }
@@ -88,15 +84,6 @@ export default function SharedWithMeScreen() {
       return;
     }
 
-    // Enable screenshot and screen recording protection
-    preventScreenCapture();
-
-    // Log access attempt
-    await logAccess('file_view', `Viewing received content from ${getUserById(content.fromUserId)?.username}`, {
-      fileId: content.fileId,
-      userId: currentUser?.id,
-    });
-
     // Increment view count
     try {
       const sharedJson = await SecureStore.getItemAsync('shared_content');
@@ -113,11 +100,11 @@ export default function SharedWithMeScreen() {
         // Reload data
         loadData();
 
-        // Show content with security warning
+        // Show content
         Alert.alert(
-          '🔒 Viewing Protected Content',
-          `From: ${getUserById(content.fromUserId)?.username || 'Unknown'}\n\n⚠️ SECURITY NOTICE:\n• Screenshot & screen recording are BLOCKED\n• This content CANNOT be shared with others\n• This content CANNOT be exported to other apps\n• Views: ${content.viewCount + 1}/${content.maxViews || '∞'}\n• Expires: ${content.expiresAt ? new Date(content.expiresAt).toLocaleString() : 'Never'}\n\n🛡️ This content is protected by Save Me security protocols.`,
-          [{ text: 'I Understand' }]
+          'Viewing Shared Content',
+          `From: ${getUserById(content.fromUserId)?.username || 'Unknown'}\nViews: ${content.viewCount + 1}/${content.maxViews || '∞'}\nExpires: ${content.expiresAt ? new Date(content.expiresAt).toLocaleString() : 'Never'}`,
+          [{ text: 'OK' }]
         );
       }
     } catch (error) {
@@ -153,19 +140,6 @@ export default function SharedWithMeScreen() {
         }
       ]
     );
-  };
-
-  const attemptToShare = () => {
-    Alert.alert(
-      '🚫 Sharing Blocked',
-      'This content was shared with you and cannot be forwarded to others or exported to any other app.\n\n🔒 Security Restrictions:\n• No sharing with other users\n• No export to other apps\n• No saving to device gallery\n• No copying or forwarding\n\nThis is a core security feature of Save Me to protect the privacy of the original sender.',
-      [{ text: 'I Understand' }]
-    );
-
-    // Log the blocked attempt
-    logAccess('file_share', 'Blocked attempt to share received content', {
-      userId: currentUser?.id,
-    });
   };
 
   const getTimeRemaining = (expiresAt?: number) => {
@@ -220,17 +194,6 @@ export default function SharedWithMeScreen() {
             </Text>
           </View>
 
-          {/* Security Notice Banner */}
-          <View style={[styles.securityBanner, { backgroundColor: colors.danger }]}>
-            <IconSymbol name="lock.shield.fill" color={colors.card} size={24} />
-            <View style={styles.securityBannerContent}>
-              <Text style={styles.securityBannerTitle}>🔒 Protected Content</Text>
-              <Text style={styles.securityBannerText}>
-                Content received here CANNOT be shared with others or exported to any app
-              </Text>
-            </View>
-          </View>
-
           <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
             <View style={styles.statItem}>
               <Text style={styles.statNumber}>{sharedContent.length}</Text>
@@ -280,17 +243,11 @@ export default function SharedWithMeScreen() {
                     onPress={() => canView && viewContent(content)}
                     onLongPress={() => deleteSharedContent(content.id)}
                   >
-                    <View style={styles.contentImageContainer}>
-                      <Image
-                        source={{ uri: content.fileUri }}
-                        style={styles.thumbnail}
-                        resizeMode="cover"
-                      />
-                      {/* Non-shareable badge overlay */}
-                      <View style={[styles.protectionBadge, { backgroundColor: colors.danger }]}>
-                        <IconSymbol name="lock.fill" color={colors.card} size={12} />
-                      </View>
-                    </View>
+                    <Image
+                      source={{ uri: content.fileUri }}
+                      style={styles.thumbnail}
+                      resizeMode="cover"
+                    />
                     <View style={styles.contentInfo}>
                       <View style={styles.senderInfo}>
                         <View style={[styles.senderAvatar, { backgroundColor: colors.primary }]}>
@@ -336,14 +293,6 @@ export default function SharedWithMeScreen() {
                             {getTimeRemaining(content.expiresAt)}
                           </Text>
                         </View>
-
-                        {/* Non-shareable indicator */}
-                        <View style={styles.metaRow}>
-                          <IconSymbol name="lock.shield.fill" color={colors.danger} size={16} />
-                          <Text style={[styles.metaText, { color: colors.danger }]}>
-                            Cannot share
-                          </Text>
-                        </View>
                       </View>
 
                       {!canView && (
@@ -371,37 +320,8 @@ export default function SharedWithMeScreen() {
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
             <IconSymbol name="info.circle.fill" color={colors.card} size={24} />
             <Text style={styles.infoText}>
-              🔒 Long press on any item to delete it. Content automatically expires after 24 hours or when view limit is reached.
-              {'\n\n'}
-              🚫 Received content CANNOT be shared with others or exported to protect sender&apos;s privacy.
+              Long press on any item to delete it. Content automatically expires after 24 hours or when view limit is reached.
             </Text>
-          </View>
-
-          {/* Additional security information */}
-          <View style={[styles.securityInfoCard, { backgroundColor: colors.card }]}>
-            <Text style={styles.securityInfoTitle}>🛡️ Security Features Active</Text>
-            <View style={styles.securityFeaturesList}>
-              <View style={styles.securityFeatureItem}>
-                <IconSymbol name="checkmark.circle.fill" color={colors.success} size={20} />
-                <Text style={styles.securityFeatureText}>Screenshot protection enabled</Text>
-              </View>
-              <View style={styles.securityFeatureItem}>
-                <IconSymbol name="checkmark.circle.fill" color={colors.success} size={20} />
-                <Text style={styles.securityFeatureText}>Screen recording blocked</Text>
-              </View>
-              <View style={styles.securityFeatureItem}>
-                <IconSymbol name="checkmark.circle.fill" color={colors.success} size={20} />
-                <Text style={styles.securityFeatureText}>Sharing to other apps disabled</Text>
-              </View>
-              <View style={styles.securityFeatureItem}>
-                <IconSymbol name="checkmark.circle.fill" color={colors.success} size={20} />
-                <Text style={styles.securityFeatureText}>Forwarding to other users blocked</Text>
-              </View>
-              <View style={styles.securityFeatureItem}>
-                <IconSymbol name="checkmark.circle.fill" color={colors.success} size={20} />
-                <Text style={styles.securityFeatureText}>Export to gallery prevented</Text>
-              </View>
-            </View>
           </View>
         </ScrollView>
       </View>
@@ -434,28 +354,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  securityBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  securityBannerContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  securityBannerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.card,
-    marginBottom: 4,
-  },
-  securityBannerText: {
-    fontSize: 13,
-    color: colors.card,
-    lineHeight: 18,
   },
   statsCard: {
     flexDirection: 'row',
@@ -502,24 +400,11 @@ const styles = StyleSheet.create({
   contentCardDisabled: {
     opacity: 0.6,
   },
-  contentImageContainer: {
-    position: 'relative',
-    marginRight: 12,
-  },
   thumbnail: {
     width: 80,
     height: 80,
     borderRadius: 8,
-  },
-  protectionBadge: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginRight: 12,
   },
   contentInfo: {
     flex: 1,
@@ -611,30 +496,5 @@ const styles = StyleSheet.create({
     color: colors.card,
     marginLeft: 12,
     lineHeight: 20,
-  },
-  securityInfoCard: {
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 16,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  securityInfoTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  securityFeaturesList: {
-    gap: 12,
-  },
-  securityFeatureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  securityFeatureText: {
-    fontSize: 14,
-    color: colors.text,
-    marginLeft: 12,
   },
 });
