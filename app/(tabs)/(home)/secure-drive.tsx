@@ -57,7 +57,7 @@ export default function SecureDriveScreen() {
         return;
       }
 
-      const result = await ImagePicker.launchImagePickerAsync({
+      const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         quality: 1,
