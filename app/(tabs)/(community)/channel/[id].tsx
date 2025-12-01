@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -238,11 +238,7 @@ export default function ChannelScreen() {
   const [messageText, setMessageText] = useState('');
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       // Load channel
       const channelsJson = await SecureStore.getItemAsync('chat_channels');
@@ -284,7 +280,11 @@ export default function ChannelScreen() {
       console.error('Error loading channel data:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('community.errorLoadingChannel'));
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getUserById = (userId: string): AppUser | undefined => {
     if (currentUser && currentUser.id === userId) return currentUser;

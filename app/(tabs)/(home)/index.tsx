@@ -30,13 +30,13 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error checking biometric support:', error);
     }
-  }, []);
+  }, [isEnrolled]);
 
   useEffect(() => {
     checkBiometricSupport();
   }, [checkBiometricSupport]);
 
-  const handleAuthenticate = async () => {
+  const handleAuthenticate = useCallback(async () => {
     try {
       if (!hasHardware || !isEnrolled) {
         Alert.alert(
@@ -65,7 +65,7 @@ export default function HomeScreen() {
       console.error('Authentication error:', error);
       Alert.alert('Error', 'An error occurred during authentication.');
     }
-  };
+  }, [hasHardware, isEnrolled]);
 
   const features = [
     {

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -176,11 +176,7 @@ export default function UserProfileScreen() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [currentUserId, setCurrentUserId] = useState('');
 
-  useEffect(() => {
-    loadUserData();
-  }, [id]);
-
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       // Load current user
       const currentUserJson = await SecureStore.getItemAsync('current_user');
@@ -214,7 +210,11 @@ export default function UserProfileScreen() {
       console.error('Error loading user data:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('community.errorLoadingProfile'));
     }
-  };
+  }, [id, currentUserId]);
+
+  useEffect(() => {
+    loadUserData();
+  }, [loadUserData]);
 
   const handleBlockUser = async () => {
     if (!user) return;

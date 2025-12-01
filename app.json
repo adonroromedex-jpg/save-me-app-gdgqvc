@@ -1,8 +1,7 @@
-
 {
   "expo": {
     "name": "Save Me",
-    "slug": "save-me-app-gdgqvc",
+    "slug": "Save Me",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -78,5 +77,6 @@
         "projectId": "00000000-0000-0000-0000-000000000000"
       }
     }
-  }
+  },
+  "scheme": "Save Me"
 }

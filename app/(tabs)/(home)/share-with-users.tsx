@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, TextInput, Image } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
@@ -29,8 +29,8 @@ interface SharedContent {
   maxViews?: number;
   shareCode: string;
   otpUsed: boolean;
-  isReceivedContent: boolean; // Flag to prevent re-sharing
-  originalOwnerId?: string; // Track the original owner
+  isReceivedContent: boolean;
+  originalOwnerId?: string;
 }
 
 interface SecureFile {
@@ -39,7 +39,7 @@ interface SecureFile {
   type: 'image' | 'video';
   timestamp: number;
   encrypted: boolean;
-  isReceivedContent?: boolean; // Flag to mark files received from others
+  isReceivedContent?: boolean;
 }
 
 export default function ShareWithUsersScreen() {
@@ -56,22 +56,14 @@ export default function ShareWithUsersScreen() {
   const fileUri = params.fileUri as string;
   const fileType = params.fileType as 'image' | 'video';
 
-  useEffect(() => {
-    loadCurrentUser();
-    loadRegisteredUsers();
-    checkIfReceivedContent();
-  }, []);
-
-  const checkIfReceivedContent = async () => {
+  const checkIfReceivedContent = useCallback(async () => {
     try {
-      // Check if this file is from received content
       const filesJson = await SecureStore.getItemAsync('secure_files');
       if (filesJson) {
         const files: SecureFile[] = JSON.parse(filesJson);
         const file = files.find(f => f.id === fileId);
         if (file && file.isReceivedContent) {
           setIsReceivedContent(true);
-          // Show blocking alert immediately
           Alert.alert(
             '🚫 Sharing Blocked',
             'This content was shared with you by another user and cannot be forwarded.\n\n🔒 Security Restrictions:\n• No sharing with other users\n• No export to other apps\n• No saving to device gallery\n• No copying or forwarding\n\nThis is a core security feature of Save Me to protect the privacy of the original sender.',
@@ -84,7 +76,6 @@ export default function ShareWithUsersScreen() {
             { cancelable: false }
           );
 
-          // Log the blocked attempt
           await logAccess('file_share', 'Blocked attempt to share received content', {
             fileId,
             userId: currentUser?.id,
@@ -94,7 +85,13 @@ export default function ShareWithUsersScreen() {
     } catch (error) {
       console.error('Error checking if received content:', error);
     }
-  };
+  }, [fileId, currentUser, router]);
+
+  useEffect(() => {
+    loadCurrentUser();
+    loadRegisteredUsers();
+    checkIfReceivedContent();
+  }, [checkIfReceivedContent]);
 
   const loadCurrentUser = async () => {
     try {
@@ -172,7 +169,6 @@ export default function ShareWithUsersScreen() {
   };
 
   const shareWithSelectedUsers = async () => {
-    // Double-check if this is received content
     if (isReceivedContent) {
       Alert.alert(
         '🚫 Sharing Blocked',
@@ -215,7 +211,7 @@ export default function ShareWithUsersScreen() {
           maxViews: 1,
           shareCode,
           otpUsed: false,
-          isReceivedContent: true, // Mark as received content for recipients
+          isReceivedContent: true,
           originalOwnerId: currentUser.id,
         };
       });
@@ -301,7 +297,6 @@ export default function ShareWithUsersScreen() {
     </Pressable>
   );
 
-  // If this is received content, show blocking screen
   if (isReceivedContent) {
     return (
       <>
