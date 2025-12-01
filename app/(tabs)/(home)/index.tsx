@@ -30,7 +30,7 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error checking biometric support:', error);
     }
-  }, [isEnrolled]);
+  }, []);
 
   useEffect(() => {
     checkBiometricSupport();

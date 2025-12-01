@@ -87,13 +87,7 @@ export default function ShareWithUsersScreen() {
     }
   }, [fileId, currentUser, router]);
 
-  useEffect(() => {
-    loadCurrentUser();
-    loadRegisteredUsers();
-    checkIfReceivedContent();
-  }, [checkIfReceivedContent]);
-
-  const loadCurrentUser = async () => {
+  const loadCurrentUser = useCallback(async () => {
     try {
       const userJson = await SecureStore.getItemAsync('current_user');
       if (userJson) {
@@ -111,9 +105,9 @@ export default function ShareWithUsersScreen() {
     } catch (error) {
       console.error('Error loading current user:', error);
     }
-  };
+  }, []);
 
-  const loadRegisteredUsers = async () => {
+  const loadRegisteredUsers = useCallback(async () => {
     try {
       const usersJson = await SecureStore.getItemAsync('registered_users');
       if (usersJson) {
@@ -147,7 +141,13 @@ export default function ShareWithUsersScreen() {
     } catch (error) {
       console.error('Error loading registered users:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadCurrentUser();
+    loadRegisteredUsers();
+    checkIfReceivedContent();
+  }, [loadCurrentUser, loadRegisteredUsers, checkIfReceivedContent]);
 
   const toggleUserSelection = (userId: string) => {
     if (isReceivedContent) {

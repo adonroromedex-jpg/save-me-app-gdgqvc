@@ -1,3 +1,4 @@
+
 // https://docs.expo.dev/guides/using-eslint/
 module.exports = {
   extends: [
@@ -21,6 +22,15 @@ module.exports = {
   env: {
     browser: true,
   },
+  settings: {
+    'import/resolver': {
+      node: {
+        extensions: ['.js', '.jsx', '.ts', '.tsx'],
+        moduleDirectory: ['node_modules', './']
+      },
+      typescript: {}
+    }
+  },
   rules: {
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-explicit-any": "off",
@@ -30,7 +40,9 @@ module.exports = {
     "@typescript-eslint/no-empty-object-type": "off",
     "@typescript-eslint/no-wrapper-object-types": "off",
     "react/no-unescaped-entities": "off",
-    "import/no-unresolved": "error",
+    "import/no-unresolved": ["error", {
+      ignore: ['^i18n-js$', '^expo-localization$']
+    }],
     "prefer-const": "off",
     "react/prop-types": 1,
     "no-case-declarations": "off",

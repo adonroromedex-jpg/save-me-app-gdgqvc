@@ -183,34 +183,31 @@ export default function UserProfileScreen() {
       if (currentUserJson) {
         const currentUser = JSON.parse(currentUserJson);
         setCurrentUserId(currentUser.id);
-      }
 
-      // Load user profile
-      if (id === currentUserId) {
-        const userJson = await SecureStore.getItemAsync('current_user');
-        if (userJson) {
-          setUser(JSON.parse(userJson));
+        // Load user profile
+        if (id === currentUser.id) {
+          setUser(currentUser);
+        } else {
+          const usersJson = await SecureStore.getItemAsync('registered_users');
+          if (usersJson) {
+            const users = JSON.parse(usersJson);
+            const foundUser = users.find((u: AppUser) => u.id === id);
+            setUser(foundUser || null);
+          }
         }
-      } else {
-        const usersJson = await SecureStore.getItemAsync('registered_users');
-        if (usersJson) {
-          const users = JSON.parse(usersJson);
-          const foundUser = users.find((u: AppUser) => u.id === id);
-          setUser(foundUser || null);
-        }
-      }
 
-      // Check if user is blocked
-      const blockedJson = await SecureStore.getItemAsync('blocked_users');
-      if (blockedJson) {
-        const blockedUsers = JSON.parse(blockedJson);
-        setIsBlocked(blockedUsers.includes(id));
+        // Check if user is blocked
+        const blockedJson = await SecureStore.getItemAsync('blocked_users');
+        if (blockedJson) {
+          const blockedUsers = JSON.parse(blockedJson);
+          setIsBlocked(blockedUsers.includes(id));
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
       Alert.alert(i18n.t('common.error'), i18n.t('community.errorLoadingProfile'));
     }
-  }, [id, currentUserId]);
+  }, [id]);
 
   useEffect(() => {
     loadUserData();

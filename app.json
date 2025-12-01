@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Save Me",
-    "slug": "Save Me",
+    "name": "save-me-app-gdgqvc",
+    "slug": "save-me-app-gdgqvc",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.roromedex.saveme",
+      "package": "com.roro.saveme",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
