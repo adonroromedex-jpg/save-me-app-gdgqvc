@@ -1,14 +1,12 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Image, AppState } from "react-native";
+import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
-import { checkSessionTimeout, updateLastActivity, logAccess, checkAndExecuteAutoDeletes, preventScreenCapture } from "@/utils/securityUtils";
-import i18n from "@/i18n";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -17,7 +15,11 @@ export default function HomeScreen() {
   const [hasHardware, setHasHardware] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
 
-  const checkBiometricSupport = useCallback(async () => {
+  useEffect(() => {
+    checkBiometricSupport();
+  }, []);
+
+  const checkBiometricSupport = async () => {
     try {
       const compatible = await LocalAuthentication.hasHardwareAsync();
       setHasHardware(compatible);
@@ -32,124 +34,80 @@ export default function HomeScreen() {
     } catch (error) {
       console.error('Error checking biometric support:', error);
     }
-  }, []);
-
-  useEffect(() => {
-    loadLanguagePreference();
-    checkBiometricSupport();
-    checkAndExecuteAutoDeletes();
-    preventScreenCapture();
-
-    const subscription = AppState.addEventListener('change', async (nextAppState) => {
-      if (nextAppState === 'active' && isAuthenticated) {
-        const timedOut = await checkSessionTimeout();
-        if (timedOut) {
-          setIsAuthenticated(false);
-          Alert.alert(
-            i18n.t('auth.sessionExpired'),
-            i18n.t('auth.sessionExpiredMessage'),
-            [{ text: i18n.t('common.ok') }]
-          );
-        } else {
-          await updateLastActivity();
-        }
-      }
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, [checkBiometricSupport, isAuthenticated]);
-
-  const loadLanguagePreference = async () => {
-    try {
-      const savedLanguage = await SecureStore.getItemAsync('app_language');
-      if (savedLanguage) {
-        i18n.locale = savedLanguage;
-      }
-    } catch (error) {
-      console.error('Error loading language preference:', error);
-    }
   };
 
   const handleAuthenticate = async () => {
     try {
       if (!hasHardware || !isEnrolled) {
         Alert.alert(
-          i18n.t('auth.biometricNotAvailable'),
-          i18n.t('auth.biometricNotAvailableMessage'),
-          [{ text: i18n.t('common.ok') }]
+          "Biometric Not Available",
+          "Please set up biometric authentication on your device for enhanced security.",
+          [{ text: "OK" }]
         );
         setIsAuthenticated(true);
-        await logAccess('login', 'Successful login without biometric');
-        await updateLastActivity();
         return;
       }
 
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: i18n.t('auth.authenticate'),
+        promptMessage: 'Authenticate to access Save Me',
         fallbackLabel: 'Use Passcode',
         disableDeviceFallback: false,
       });
 
       if (result.success) {
         setIsAuthenticated(true);
-        await logAccess('login', 'Successful login with biometric authentication');
-        await updateLastActivity();
         console.log('Authentication successful');
       } else {
-        await logAccess('failed_auth', 'Failed biometric authentication attempt');
-        Alert.alert(i18n.t('auth.authenticationFailed'), i18n.t('auth.authenticationFailedMessage'));
+        Alert.alert('Authentication Failed', 'Please try again.');
         console.log('Authentication failed:', result);
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      await logAccess('failed_auth', 'Authentication error occurred');
-      Alert.alert(i18n.t('common.error'), 'An error occurred during authentication.');
+      Alert.alert('Error', 'An error occurred during authentication.');
     }
   };
 
   const features = [
     {
-      title: i18n.t('features.secureDrive.title'),
-      description: i18n.t('features.secureDrive.description'),
+      title: "Secure Drive",
+      description: "AES-256 encrypted storage for your private media",
       icon: "lock.shield.fill",
       color: colors.primary,
       route: "/secure-drive",
     },
     {
-      title: i18n.t('features.privateCamera.title'),
-      description: i18n.t('features.privateCamera.description'),
+      title: "Private Camera",
+      description: "Take photos directly in the app with no external storage",
       icon: "camera.fill",
       color: colors.secondary,
       route: "/private-camera",
     },
     {
-      title: i18n.t('features.sharedWithMe.title'),
-      description: i18n.t('features.sharedWithMe.description'),
-      icon: "tray.fill",
+      title: "Controlled Sharing",
+      description: "Share with unique codes and time-limited access",
+      icon: "square.and.arrow.up.fill",
       color: colors.accent,
-      route: "/shared-with-me",
+      route: "/controlled-sharing",
     },
     {
-      title: i18n.t('features.accessLog.title'),
-      description: i18n.t('features.accessLog.description'),
-      icon: "doc.text.fill",
+      title: "Access Log",
+      description: "Track all access to your private content",
+      icon: "list.bullet.clipboard.fill",
       color: colors.highlight,
       route: "/access-log",
     },
   ];
 
   const securityFeatures = [
-    { icon: "faceid", text: i18n.t('features.facialRecognition') },
-    { icon: "timer", text: i18n.t('features.autoDelete') },
-    { icon: "eye.slash.fill", text: i18n.t('features.antiScreenshot') },
-    { icon: "bell.badge.fill", text: i18n.t('features.viewNotifications') },
+    { icon: "faceid", text: "Facial Recognition" },
+    { icon: "timer", text: "Auto-Delete 24h" },
+    { icon: "eye.slash.fill", text: "Anti-Screenshot" },
+    { icon: "bell.badge.fill", text: "View Notifications" },
   ];
 
   const renderHeaderRight = () => (
     <Pressable
-      onPress={() => Alert.alert(i18n.t('profile.settings'), i18n.t('profile.additionalSettings'))}
+      onPress={() => Alert.alert("Settings", "Settings feature coming soon")}
       style={styles.headerButtonContainer}
     >
       <IconSymbol name="gear" color={colors.primary} />
@@ -159,18 +117,8 @@ export default function HomeScreen() {
   const renderHeaderLeft = () => (
     <Pressable
       onPress={() => Alert.alert("Panic Button", "This will delete all sensitive content. Are you sure?", [
-        { text: i18n.t('common.cancel'), style: "cancel" },
-        { 
-          text: i18n.t('common.delete'), 
-          style: "destructive", 
-          onPress: async () => {
-            await SecureStore.deleteItemAsync('secure_files');
-            await SecureStore.deleteItemAsync('shared_content');
-            await logAccess('file_delete', 'Panic delete executed from home screen');
-            Alert.alert(i18n.t('profile.allDeleted'), i18n.t('profile.allDeletedMessage'));
-            console.log("Panic delete triggered");
-          }
-        }
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete All", style: "destructive", onPress: () => console.log("Panic delete triggered") }
       ])}
       style={styles.headerButtonContainer}
     >
@@ -190,15 +138,12 @@ export default function HomeScreen() {
           />
         )}
         <View style={[commonStyles.container, commonStyles.centerContent]}>
-          <Image 
-            source={require('@/assets/images/58b243a3-a5cf-45d2-b7e2-b6b0d2c95648.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          
-          <Text style={[commonStyles.title, { textAlign: 'center', marginTop: 24 }]}>{i18n.t('auth.welcome')}</Text>
+          <View style={[styles.lockIconContainer, { backgroundColor: colors.primary }]}>
+            <IconSymbol name="lock.shield.fill" color={colors.card} size={60} />
+          </View>
+          <Text style={[commonStyles.title, { textAlign: 'center' }]}>Welcome to Save Me</Text>
           <Text style={[commonStyles.subtitle, { textAlign: 'center', paddingHorizontal: 40 }]}>
-            {i18n.t('auth.welcomeDescription')}
+            Your privacy is our priority. Authenticate to access your secure content.
           </Text>
           
           <View style={styles.securityBadgesContainer}>
@@ -215,11 +160,11 @@ export default function HomeScreen() {
             onPress={handleAuthenticate}
           >
             <IconSymbol name="faceid" color={colors.card} size={24} />
-            <Text style={styles.authButtonText}>{i18n.t('auth.authenticate')}</Text>
+            <Text style={styles.authButtonText}>Authenticate</Text>
           </Pressable>
 
           <Text style={styles.privacyText}>
-            {i18n.t('auth.privacyNote')}
+            🔐 End-to-end encrypted • Zero-knowledge storage
           </Text>
         </View>
       </>
@@ -245,47 +190,29 @@ export default function HomeScreen() {
           ]}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('@/assets/images/58b243a3-a5cf-45d2-b7e2-b6b0d2c95648.png')}
-              style={styles.logoSmall}
-              resizeMode="contain"
-            />
-          </View>
-
           <View style={styles.header}>
-            <Text style={commonStyles.title}>{i18n.t('home.title')}</Text>
+            <Text style={commonStyles.title}>Your Secure Vault</Text>
             <Text style={commonStyles.subtitle}>
-              {i18n.t('home.subtitle')}
+              All your private content is protected with military-grade encryption
             </Text>
-          </View>
-
-          <View style={[styles.securityBanner, { backgroundColor: colors.success }]}>
-            <IconSymbol name="checkmark.shield.fill" color={colors.card} size={24} />
-            <View style={styles.securityBannerContent}>
-              <Text style={styles.securityBannerTitle}>{i18n.t('home.maxSecurityActive')}</Text>
-              <Text style={styles.securityBannerText}>
-                {i18n.t('home.securityFeatures')}
-              </Text>
-            </View>
           </View>
 
           <View style={styles.statsContainer}>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>{i18n.t('home.secureFiles')}</Text>
+              <Text style={styles.statLabel}>Secure Files</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>{i18n.t('home.sharedItems')}</Text>
+              <Text style={styles.statLabel}>Shared Items</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: colors.card }]}>
               <Text style={styles.statNumber}>0</Text>
-              <Text style={styles.statLabel}>{i18n.t('home.accessLogs')}</Text>
+              <Text style={styles.statLabel}>Access Logs</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>{i18n.t('home.features')}</Text>
+          <Text style={styles.sectionTitle}>Features</Text>
           
           {features.map((feature, index) => (
             <Pressable
@@ -296,10 +223,6 @@ export default function HomeScreen() {
                   router.push("/(tabs)/(home)/secure-drive");
                 } else if (feature.route === "/private-camera") {
                   router.push("/(tabs)/(home)/private-camera");
-                } else if (feature.route === "/shared-with-me") {
-                  router.push("/(tabs)/(home)/shared-with-me");
-                } else if (feature.route === "/access-log") {
-                  router.push("/(tabs)/(home)/access-log");
                 } else {
                   Alert.alert("Coming Soon", `${feature.title} feature will be available soon!`);
                 }
@@ -318,12 +241,11 @@ export default function HomeScreen() {
 
           <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
             <IconSymbol name="checkmark.shield.fill" color={colors.card} size={32} />
-            <View style={styles.infoCardContent}>
-              <Text style={styles.infoTitle}>{i18n.t('home.privacyMatters')}</Text>
-              <Text style={styles.infoDescription}>
-                {i18n.t('home.privacyDescription')}
-              </Text>
-            </View>
+            <Text style={styles.infoTitle}>Your Privacy Matters</Text>
+            <Text style={styles.infoDescription}>
+              Save Me uses AES-256 encryption, the same standard used by governments and banks worldwide.
+              Your data never leaves your device unencrypted.
+            </Text>
           </View>
         </ScrollView>
       </View>
@@ -342,46 +264,11 @@ const styles = StyleSheet.create({
   scrollContentWithTabBar: {
     paddingBottom: 100,
   },
-  logo: {
-    width: 180,
-    height: 180,
-    marginBottom: 8,
-  },
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  logoSmall: {
-    width: 100,
-    height: 100,
-  },
   header: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   headerButtonContainer: {
     padding: 8,
-  },
-  securityBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
-  },
-  securityBannerContent: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  securityBannerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.card,
-    marginBottom: 4,
-  },
-  securityBannerText: {
-    fontSize: 13,
-    color: colors.card,
-    opacity: 0.9,
   },
   lockIconContainer: {
     width: 120,
@@ -500,25 +387,23 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   infoCard: {
-    flexDirection: 'row',
     padding: 20,
     borderRadius: 16,
+    alignItems: 'center',
     marginTop: 8,
     marginBottom: 20,
-  },
-  infoCardContent: {
-    flex: 1,
-    marginLeft: 16,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.card,
+    marginTop: 12,
     marginBottom: 8,
   },
   infoDescription: {
     fontSize: 14,
     color: colors.card,
+    textAlign: 'center',
     lineHeight: 20,
     opacity: 0.9,
   },

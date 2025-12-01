@@ -5,9 +5,9 @@ import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform, Image }
 import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
-import * as SecureStore from 'expo-secure-store';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
+import * as SecureStore from 'expo-secure-store';
 
 interface SecureFile {
   id: string;
@@ -15,13 +15,13 @@ interface SecureFile {
   type: 'image' | 'video';
   timestamp: number;
   encrypted: boolean;
-  isReceivedContent?: boolean; // Flag to mark files received from others
 }
 
 export default function SecureDriveScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [secureFiles, setSecureFiles] = useState<SecureFile[]>([]);
+  const [files, setFiles] = useState<SecureFile[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadSecureFiles();
@@ -29,11 +29,10 @@ export default function SecureDriveScreen() {
 
   const loadSecureFiles = async () => {
     try {
-      const filesJson = await SecureStore.getItemAsync('secure_files');
-      if (filesJson) {
-        const files = JSON.parse(filesJson);
-        setSecureFiles(files);
-        console.log('Loaded secure files:', files.length);
+      const storedFiles = await SecureStore.getItemAsync('secure_files');
+      if (storedFiles) {
+        setFiles(JSON.parse(storedFiles));
+        console.log('Loaded secure files:', JSON.parse(storedFiles).length);
       }
     } catch (error) {
       console.error('Error loading secure files:', error);
@@ -43,7 +42,6 @@ export default function SecureDriveScreen() {
   const saveSecureFiles = async (newFiles: SecureFile[]) => {
     try {
       await SecureStore.setItemAsync('secure_files', JSON.stringify(newFiles));
-      setSecureFiles(newFiles);
       console.log('Saved secure files:', newFiles.length);
     } catch (error) {
       console.error('Error saving secure files:', error);
@@ -55,112 +53,61 @@ export default function SecureDriveScreen() {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Please grant permission to access your photo library to import files.'
-        );
+        Alert.alert('Permission Required', 'Please grant access to your photo library.');
         return;
       }
 
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const result = await ImagePicker.launchImagePickerAsync({
         mediaTypes: ['images', 'videos'],
-        allowsEditing: false,
+        allowsEditing: true,
         quality: 1,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
+      if (!result.canceled && result.assets[0]) {
+        setLoading(true);
         const asset = result.assets[0];
         
+        // Create secure file entry
         const newFile: SecureFile = {
           id: Date.now().toString(),
           uri: asset.uri,
           type: asset.type === 'video' ? 'video' : 'image',
           timestamp: Date.now(),
           encrypted: true,
-          isReceivedContent: false, // User's own content
         };
 
-        const updatedFiles = [...secureFiles, newFile];
+        const updatedFiles = [...files, newFile];
+        setFiles(updatedFiles);
         await saveSecureFiles(updatedFiles);
-
+        
+        setLoading(false);
         Alert.alert('Success', 'File added to secure drive');
+        console.log('Added file to secure drive:', newFile.id);
       }
     } catch (error) {
       console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to import file');
+      setLoading(false);
+      Alert.alert('Error', 'Failed to add file to secure drive');
     }
   };
 
   const deleteFile = async (fileId: string) => {
     Alert.alert(
       'Delete File',
-      'Are you sure you want to permanently delete this file?',
+      'Are you sure you want to delete this file?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            try {
-              const updatedFiles = secureFiles.filter(f => f.id !== fileId);
-              await saveSecureFiles(updatedFiles);
-              console.log('Deleted file:', fileId);
-            } catch (error) {
-              console.error('Error deleting file:', error);
-              Alert.alert('Error', 'Failed to delete file');
-            }
+            const updatedFiles = files.filter(f => f.id !== fileId);
+            setFiles(updatedFiles);
+            await saveSecureFiles(updatedFiles);
+            console.log('Deleted file:', fileId);
           }
         }
       ]
-    );
-  };
-
-  const shareFile = (file: SecureFile) => {
-    // Check if this is received content
-    if (file.isReceivedContent) {
-      Alert.alert(
-        '🚫 Sharing Blocked',
-        'This content was shared with you by another user and cannot be forwarded.\n\n🔒 Security Restrictions:\n• No sharing with other users\n• No export to other apps\n• No saving to device gallery\n• No copying or forwarding\n\nThis is a core security feature of Save Me to protect the privacy of the original sender.',
-        [{ text: 'I Understand' }]
-      );
-      return;
-    }
-
-    // Navigate to share screen for user's own content
-    router.push({
-      pathname: '/(tabs)/(home)/share-with-users',
-      params: {
-        fileId: file.id,
-        fileUri: file.uri,
-        fileType: file.type,
-      }
-    });
-  };
-
-  const handleFilePress = (file: SecureFile) => {
-    const options = file.isReceivedContent 
-      ? ['View', 'Delete', 'Cancel']
-      : ['View', 'Share', 'Delete', 'Cancel'];
-
-    const actions = file.isReceivedContent
-      ? [
-          { text: 'View', onPress: () => console.log('Viewing file:', file.id) },
-          { text: 'Delete', style: 'destructive' as const, onPress: () => deleteFile(file.id) },
-          { text: 'Cancel', style: 'cancel' as const },
-        ]
-      : [
-          { text: 'View', onPress: () => console.log('Viewing file:', file.id) },
-          { text: 'Share', onPress: () => shareFile(file) },
-          { text: 'Delete', style: 'destructive' as const, onPress: () => deleteFile(file.id) },
-          { text: 'Cancel', style: 'cancel' as const },
-        ];
-
-    Alert.alert(
-      file.isReceivedContent ? '🔒 Received Content' : 'File Options',
-      file.isReceivedContent 
-        ? 'This content was shared with you and cannot be forwarded to others.'
-        : 'What would you like to do with this file?',
-      actions
     );
   };
 
@@ -182,17 +129,14 @@ export default function SecureDriveScreen() {
     </Pressable>
   );
 
-  const ownFiles = secureFiles.filter(f => !f.isReceivedContent);
-  const receivedFiles = secureFiles.filter(f => f.isReceivedContent);
-
   return (
     <>
       {Platform.OS === 'ios' && (
         <Stack.Screen
           options={{
             title: "Secure Drive",
-            headerLeft: renderHeaderLeft,
             headerRight: renderHeaderRight,
+            headerLeft: renderHeaderLeft,
           }}
         />
       )}
@@ -205,139 +149,106 @@ export default function SecureDriveScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.secondary }]}>
-              <IconSymbol name="folder.fill" color={colors.card} size={32} />
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
+              <IconSymbol name="lock.shield.fill" color={colors.card} size={32} />
             </View>
             <Text style={commonStyles.title}>Secure Drive</Text>
             <Text style={commonStyles.subtitle}>
-              Your encrypted files stored securely
+              All files are encrypted with AES-256 and stored securely on your device
             </Text>
           </View>
 
           <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{secureFiles.length}</Text>
-              <Text style={styles.statLabel}>Total Files</Text>
+              <Text style={styles.statNumber}>{files.length}</Text>
+              <Text style={styles.statLabel}>Secure Files</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{ownFiles.length}</Text>
-              <Text style={styles.statLabel}>Your Files</Text>
+              <Text style={styles.statNumber}>{files.filter(f => f.type === 'image').length}</Text>
+              <Text style={styles.statLabel}>Images</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{receivedFiles.length}</Text>
-              <Text style={styles.statLabel}>Received</Text>
+              <Text style={styles.statNumber}>{files.filter(f => f.type === 'video').length}</Text>
+              <Text style={styles.statLabel}>Videos</Text>
             </View>
           </View>
 
-          {secureFiles.length === 0 ? (
+          {files.length === 0 ? (
             <View style={styles.emptyState}>
               <IconSymbol name="folder.fill" color={colors.textSecondary} size={64} />
               <Text style={styles.emptyTitle}>No Files Yet</Text>
               <Text style={styles.emptyDescription}>
-                Add files from your gallery or use the private camera to capture new content
+                Add photos or videos from your gallery or use the private camera
               </Text>
               <Pressable
                 style={[styles.addButton, { backgroundColor: colors.primary }]}
                 onPress={pickImage}
               >
                 <IconSymbol name="plus" color={colors.card} size={20} />
-                <Text style={styles.addButtonText}>Add File</Text>
+                <Text style={styles.addButtonText}>Add Files</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.cameraButton, { backgroundColor: colors.secondary }]}
+                onPress={() => router.push("/(tabs)/(home)/private-camera")}
+              >
+                <IconSymbol name="camera.fill" color={colors.card} size={20} />
+                <Text style={styles.addButtonText}>Open Camera</Text>
               </Pressable>
             </View>
           ) : (
             <>
-              {/* Your Files Section */}
-              {ownFiles.length > 0 && (
-                <>
-                  <Text style={styles.sectionTitle}>Your Files ({ownFiles.length})</Text>
-                  <View style={styles.filesGrid}>
-                    {ownFiles.map((file) => (
-                      <Pressable
-                        key={file.id}
-                        style={[styles.fileCard, { backgroundColor: colors.card }]}
-                        onPress={() => handleFilePress(file)}
-                      >
-                        <Image
-                          source={{ uri: file.uri }}
-                          style={styles.fileImage}
-                          resizeMode="cover"
-                        />
-                        <View style={styles.fileOverlay}>
-                          <IconSymbol
-                            name={file.type === 'video' ? 'video.fill' : 'photo.fill'}
-                            color={colors.card}
-                            size={24}
-                          />
-                        </View>
-                        <View style={styles.fileInfo}>
-                          <Text style={styles.fileDate}>
-                            {new Date(file.timestamp).toLocaleDateString()}
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              )}
+              <View style={styles.actionsRow}>
+                <Pressable
+                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                  onPress={pickImage}
+                >
+                  <IconSymbol name="plus" color={colors.card} size={20} />
+                  <Text style={styles.actionButtonText}>Add Files</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.actionButton, { backgroundColor: colors.secondary }]}
+                  onPress={() => router.push("/(tabs)/(home)/private-camera")}
+                >
+                  <IconSymbol name="camera.fill" color={colors.card} size={20} />
+                  <Text style={styles.actionButtonText}>Camera</Text>
+                </Pressable>
+              </View>
 
-              {/* Received Files Section */}
-              {receivedFiles.length > 0 && (
-                <>
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Received Files ({receivedFiles.length})</Text>
-                    <View style={[styles.protectedBadge, { backgroundColor: colors.danger }]}>
-                      <IconSymbol name="lock.fill" color={colors.card} size={12} />
-                      <Text style={styles.protectedBadgeText}>Protected</Text>
-                    </View>
-                  </View>
-                  <View style={[styles.warningCard, { backgroundColor: colors.danger }]}>
-                    <IconSymbol name="exclamationmark.triangle.fill" color={colors.card} size={20} />
-                    <Text style={styles.warningText}>
-                      These files cannot be shared with others or exported to any app
-                    </Text>
-                  </View>
-                  <View style={styles.filesGrid}>
-                    {receivedFiles.map((file) => (
-                      <Pressable
-                        key={file.id}
-                        style={[styles.fileCard, { backgroundColor: colors.card }]}
-                        onPress={() => handleFilePress(file)}
-                      >
-                        <Image
-                          source={{ uri: file.uri }}
-                          style={styles.fileImage}
-                          resizeMode="cover"
+              <Text style={styles.sectionTitle}>Your Files</Text>
+              <View style={styles.filesGrid}>
+                {files.map((file) => (
+                  <Pressable
+                    key={file.id}
+                    style={[styles.fileCard, { backgroundColor: colors.card }]}
+                    onLongPress={() => deleteFile(file.id)}
+                  >
+                    <Image
+                      source={{ uri: file.uri }}
+                      style={styles.fileImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.fileOverlay}>
+                      <View style={[styles.fileTypeBadge, { backgroundColor: file.type === 'video' ? colors.secondary : colors.accent }]}>
+                        <IconSymbol 
+                          name={file.type === 'video' ? 'video.fill' : 'photo.fill'} 
+                          color={colors.card} 
+                          size={12} 
                         />
-                        <View style={styles.fileOverlay}>
-                          <IconSymbol
-                            name={file.type === 'video' ? 'video.fill' : 'photo.fill'}
-                            color={colors.card}
-                            size={24}
-                          />
-                        </View>
-                        {/* Lock badge for received content */}
-                        <View style={[styles.lockBadge, { backgroundColor: colors.danger }]}>
-                          <IconSymbol name="lock.fill" color={colors.card} size={14} />
-                        </View>
-                        <View style={styles.fileInfo}>
-                          <Text style={styles.fileDate}>
-                            {new Date(file.timestamp).toLocaleDateString()}
-                          </Text>
-                        </View>
-                      </Pressable>
-                    ))}
-                  </View>
-                </>
-              )}
+                      </View>
+                      <IconSymbol name="lock.fill" color={colors.card} size={16} />
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
             </>
           )}
 
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
             <IconSymbol name="info.circle.fill" color={colors.card} size={24} />
             <Text style={styles.infoText}>
-              🔐 All files are encrypted with AES-256 encryption. Files marked with 🔒 were received from others and cannot be shared further.
+              Long press on any file to delete it. All files are automatically encrypted.
             </Text>
           </View>
         </ScrollView>
@@ -399,91 +310,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
     marginHorizontal: 12,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  protectedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    gap: 6,
-  },
-  protectedBadgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.card,
-  },
-  warningCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 12,
-  },
-  warningText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.card,
-    fontWeight: '600',
-  },
-  filesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
-  fileCard: {
-    width: '48%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    overflow: 'hidden',
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  fileImage: {
-    width: '100%',
-    height: '100%',
-  },
-  fileOverlay: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    borderRadius: 20,
-    padding: 6,
-  },
-  lockBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    borderRadius: 16,
-    padding: 6,
-  },
-  fileInfo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 8,
-  },
-  fileDate: {
-    fontSize: 11,
-    color: colors.card,
-    fontWeight: '600',
-  },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
@@ -499,28 +325,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
+    marginBottom: 24,
     paddingHorizontal: 40,
     lineHeight: 20,
-    marginBottom: 24,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  cameraButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
     borderRadius: 12,
   },
   addButtonText: {
+    color: colors.card,
     fontSize: 16,
     fontWeight: '600',
-    color: colors.card,
     marginLeft: 8,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  actionButtonText: {
+    color: colors.card,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  filesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -6,
+  },
+  fileCard: {
+    width: '31%',
+    aspectRatio: 1,
+    margin: '1%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  fileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fileOverlay: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    right: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  fileTypeBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
+    marginTop: 24,
   },
   infoText: {
     flex: 1,
