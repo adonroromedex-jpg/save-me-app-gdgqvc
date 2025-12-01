@@ -1,6 +1,7 @@
+
 {
   "expo": {
-    "name": "save-me-app-gdgqvc",
+    "name": "Save Me",
     "slug": "save-me-app-gdgqvc",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -14,9 +15,12 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
+      "bundleIdentifier": "com.roromedex.saveme",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Save Me needs access to your camera to capture private photos and videos securely.",
+        "NSPhotoLibraryUsageDescription": "Save Me needs access to your photo library to import images to your secure drive.",
+        "NSFaceIDUsageDescription": "Save Me uses Face ID to verify your identity and protect your private content."
       }
     },
     "android": {
@@ -24,8 +28,16 @@
         "foregroundImage": "./assets/images/natively-dark.png",
         "backgroundColor": "#000000"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.roromedex.saveme"
+      "package": "com.roromedex.saveme",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
@@ -34,14 +46,37 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Save Me needs access to your camera to capture private photos and videos securely."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Save Me needs access to your photo library to import images to your secure drive."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Save Me uses Face ID to verify your identity and protect your private content."
+        }
+      ]
     ],
-    "scheme": "natively",
+    "scheme": "saveme",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+
 {
   "name": "save-me-app-gdgqvc",
   "version": "1.0.0",
@@ -9,6 +10,8 @@
     "web": "EXPO_NO_TELEMETRY=1 expo start --web",
     "build:web": "expo export -p web && npx workbox generateSW workbox-config.js",
     "build:android": "expo prebuild -p android",
+    "build:apk": "eas build -p android --profile preview",
+    "build:production": "eas build -p android --profile production",
     "lint": "eslint ."
   },
   "dependencies": {
@@ -24,7 +27,6 @@
     "@react-navigation/native-stack": "^7.2.0",
     "@types/difflib": "^0.2.7",
     "difflib": "^0.2.4",
-    "eas": "^0.1.0",
     "expo": "~54.0.1",
     "expo-blur": "^15.0.6",
     "expo-camera": "^17.0.9",
