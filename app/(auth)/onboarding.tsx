@@ -122,7 +122,7 @@ export default function OnboardingScreen() {
         </View>
 
         <Pressable
-          style={[styles.button, { backgroundColor: colors.primary }]}
+          style={[styles.button, { backgroundColor: '#FF0000' }]}
           onPress={handleNext}
         >
           <Text style={styles.buttonText}>
@@ -132,7 +132,7 @@ export default function OnboardingScreen() {
             ios_icon_name="arrow.right"
             android_material_icon_name="arrow_forward"
             size={20}
-            color="#ff0000"
+            color="#ffffff"
           />
         </Pressable>
       </View>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0000ff',
+    color: '#0066FF',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#3f51b5',
+    backgroundColor: '#0066FF',
     marginHorizontal: 4,
   },
   button: {
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: '#ff0000',
+    color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
     marginRight: 8,

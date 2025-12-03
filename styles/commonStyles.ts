@@ -5,14 +5,14 @@ export const colors = {
   background: '#f9f9f9',
   text: '#212121',
   textSecondary: '#757575',
-  primary: '#3f51b5',
+  primary: '#0066FF',
   secondary: '#e91e63',
   accent: '#00bcd4',
   card: '#ffffff',
   highlight: '#ff4081',
   success: '#4caf50',
   warning: '#ff9800',
-  danger: '#f44336',
+  danger: '#FF0000',
   border: '#e0e0e0',
 };
 
