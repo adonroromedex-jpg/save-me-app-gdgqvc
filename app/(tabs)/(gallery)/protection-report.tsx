@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,11 +37,7 @@ export default function ProtectionReportScreen() {
   const { itemId } = useLocalSearchParams();
   const [item, setItem] = useState<ProtectedItem | null>(null);
 
-  useEffect(() => {
-    loadItem();
-  }, [itemId]);
-
-  const loadItem = async () => {
+  const loadItem = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem('protected_items');
       if (stored) {
@@ -54,7 +50,11 @@ export default function ProtectionReportScreen() {
     } catch (error) {
       console.error('Error loading item:', error);
     }
-  };
+  }, [itemId]);
+
+  useEffect(() => {
+    loadItem();
+  }, [loadItem]);
 
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';

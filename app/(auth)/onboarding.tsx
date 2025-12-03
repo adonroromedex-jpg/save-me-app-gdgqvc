@@ -109,41 +109,13 @@ export default function OnboardingScreen() {
 
       <View style={styles.footer}>
         <View style={styles.pagination}>
-          {onboardingData.map((_, index) => {
-            const dotStyle = useAnimatedStyle(() => {
-              const inputRange = [
-                (index - 1) * SCREEN_WIDTH,
-                index * SCREEN_WIDTH,
-                (index + 1) * SCREEN_WIDTH,
-              ];
-
-              const width = interpolate(
-                scrollX.value,
-                inputRange,
-                [8, 24, 8],
-                Extrapolate.CLAMP
-              );
-
-              const opacity = interpolate(
-                scrollX.value,
-                inputRange,
-                [0.3, 1, 0.3],
-                Extrapolate.CLAMP
-              );
-
-              return {
-                width,
-                opacity,
-              };
-            });
-
-            return (
-              <Animated.View
-                key={index}
-                style={[styles.dot, dotStyle]}
-              />
-            );
-          })}
+          {onboardingData.map((_, index) => (
+            <PaginationDot
+              key={index}
+              index={index}
+              scrollX={scrollX}
+            />
+          ))}
         </View>
 
         <Pressable
@@ -161,6 +133,46 @@ export default function OnboardingScreen() {
         </Pressable>
       </View>
     </View>
+  );
+}
+
+interface PaginationDotProps {
+  index: number;
+  scrollX: Animated.SharedValue<number>;
+}
+
+function PaginationDot({ index, scrollX }: PaginationDotProps) {
+  const dotStyle = useAnimatedStyle(() => {
+    const inputRange = [
+      (index - 1) * SCREEN_WIDTH,
+      index * SCREEN_WIDTH,
+      (index + 1) * SCREEN_WIDTH,
+    ];
+
+    const width = interpolate(
+      scrollX.value,
+      inputRange,
+      [8, 24, 8],
+      Extrapolate.CLAMP
+    );
+
+    const opacity = interpolate(
+      scrollX.value,
+      inputRange,
+      [0.3, 1, 0.3],
+      Extrapolate.CLAMP
+    );
+
+    return {
+      width,
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[styles.dot, dotStyle]}
+    />
   );
 }
 

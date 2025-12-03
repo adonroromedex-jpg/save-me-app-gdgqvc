@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
@@ -10,8 +10,8 @@ interface SplashScreenProps {
 }
 
 export default function SplashScreen({ onFinish }: SplashScreenProps) {
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.5);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -39,7 +39,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     }, 2500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [fadeAnim, scaleAnim, onFinish]);
 
   return (
     <View style={styles.container}>
