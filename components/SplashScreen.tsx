@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Image } from 'react-native';
-import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -57,19 +56,11 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         ]}
       >
         <Image
-          source={require('@/assets/images/natively-dark.png')}
+          source={require('@/assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png')}
           style={styles.logo}
           resizeMode="contain"
         />
-        <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
-          <IconSymbol name="lock.shield.fill" size={80} color="#ffffff" />
-        </View>
-        <Text style={styles.title}>Save Me</Text>
         <Text style={styles.subtitle}>Your Privacy Guardian</Text>
-        <View style={styles.tagline}>
-          <IconSymbol name="checkmark.shield.fill" size={16} color={colors.primary} />
-          <Text style={styles.taglineText}>AES-256 Encrypted</Text>
-        </View>
       </Animated.View>
     </View>
   );
@@ -85,43 +76,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: 120,
-    height: 120,
+    width: 280,
+    height: 280,
     marginBottom: 24,
-  },
-  logoContainer: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 32,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
-    elevation: 8,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: '700',
-    color: '#ffffff',
-    marginBottom: 8,
   },
   subtitle: {
     fontSize: 18,
     color: 'rgba(255, 255, 255, 0.8)',
     marginBottom: 24,
-  },
-  tagline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  taglineText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
   },
 });

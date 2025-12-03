@@ -85,11 +85,10 @@ export default function OnboardingScreen() {
 
       <View style={styles.logoHeader}>
         <Image
-          source={require('@/assets/images/natively-dark.png')}
+          source={require('@/assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png')}
           style={styles.headerLogo}
           resizeMode="contain"
         />
-        <Text style={styles.headerTitle}>Save Me</Text>
       </View>
 
       {currentIndex < onboardingData.length - 1 && (
@@ -136,7 +135,8 @@ export default function OnboardingScreen() {
             {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
           </Text>
           <IconSymbol
-            name="arrow.right"
+            ios_icon_name="arrow.right"
+            android_material_icon_name="arrow_forward"
             size={20}
             color="#ffffff"
           />
@@ -224,7 +224,7 @@ function OnboardingSlide({ item, index, scrollX }: OnboardingSlideProps) {
     <View style={styles.slide}>
       <Animated.View style={[styles.slideContent, animatedStyle]}>
         <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
-          <IconSymbol name={item.icon} size={80} color="#ffffff" />
+          <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon.replace('.fill', '')} size={80} color="#ffffff" />
         </View>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>
@@ -244,15 +244,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   headerLogo: {
-    width: 80,
-    height: 80,
+    width: 160,
+    height: 160,
     marginBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#ffffff',
-    letterSpacing: 1,
   },
   skipButton: {
     position: 'absolute',
