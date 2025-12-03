@@ -1,7 +1,8 @@
+
 {
   "expo": {
-    "name": "save-me-app-gdgqvc",
-    "slug": "save-me-app-gdgqvc",
+    "name": "Save Me",
+    "slug": "save-me",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -10,32 +11,36 @@
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#1a1a2e"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.roromedex.saveme",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Save Me needs access to your camera to capture private photos and videos securely.",
-        "NSPhotoLibraryUsageDescription": "Save Me needs access to your photo library to import images to your secure drive.",
-        "NSFaceIDUsageDescription": "Save Me uses Face ID to verify your identity and protect your private content."
+        "NSCameraUsageDescription": "Save Me needs access to your camera to capture private photos and videos securely within the app.",
+        "NSPhotoLibraryUsageDescription": "Save Me needs access to your photo library to import images and videos to your secure encrypted drive.",
+        "NSPhotoLibraryAddUsageDescription": "Save Me needs permission to save protected photos to your library when you choose to export them.",
+        "NSFaceIDUsageDescription": "Save Me uses Face ID to verify your identity and protect your private content from unauthorized access."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#1a1a2e"
       },
       "package": "com.roro.saveme",
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_VIDEO",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_ADSERVICES_AD_ID",
+        "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
+        "android.permission.ACCESS_ADSERVICES_TOPICS"
       ]
     },
     "web": {
@@ -49,19 +54,20 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Save Me needs access to your camera to capture private photos and videos securely."
+          "cameraPermission": "Save Me needs access to your camera to capture private photos and videos securely within the app."
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "Save Me needs access to your photo library to import images to your secure drive."
+          "photosPermission": "Save Me needs access to your photo library to import images and videos to your secure encrypted drive.",
+          "cameraPermission": "Save Me needs access to your camera to capture photos directly in the app."
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Save Me uses Face ID to verify your identity and protect your private content."
+          "faceIDPermission": "Save Me uses Face ID to verify your identity and protect your private content from unauthorized access."
         }
       ]
     ],
@@ -77,6 +83,5 @@
         "projectId": "00000000-0000-0000-0000-000000000000"
       }
     }
-  },
-  "scheme": "Save Me"
+  }
 }
