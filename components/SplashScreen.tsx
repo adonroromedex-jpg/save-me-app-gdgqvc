@@ -2,7 +2,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { colors } from '@/styles/commonStyles';
-import { LinearGradient } from 'expo-linear-gradient';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -42,10 +41,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        style={StyleSheet.absoluteFillObject}
-      />
       <Animated.View
         style={[
           styles.content,
@@ -71,6 +66,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#ffffff',
   },
   content: {
     alignItems: 'center',
@@ -82,7 +78,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#757575',
     marginBottom: 24,
   },
 });

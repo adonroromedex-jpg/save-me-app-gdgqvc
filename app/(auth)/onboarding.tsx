@@ -20,7 +20,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -78,11 +77,6 @@ export default function OnboardingScreen() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        style={StyleSheet.absoluteFillObject}
-      />
-
       <View style={styles.logoHeader}>
         <Image
           source={require('@/assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png')}
@@ -138,7 +132,7 @@ export default function OnboardingScreen() {
             ios_icon_name="arrow.right"
             android_material_icon_name="arrow_forward"
             size={20}
-            color="#ffffff"
+            color="#ff0000"
           />
         </Pressable>
       </View>
@@ -236,7 +230,7 @@ function OnboardingSlide({ item, index, scrollX }: OnboardingSlideProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#ffffff',
   },
   logoHeader: {
     alignItems: 'center',
@@ -256,7 +250,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   skipText: {
-    color: '#ffffff',
+    color: '#212121',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -281,19 +275,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#0000ff',
     textAlign: 'center',
     marginBottom: 16,
   },
   description: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#757575',
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -311,7 +305,7 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#3f51b5',
     marginHorizontal: 4,
   },
   button: {
@@ -322,11 +316,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 12,
     width: '100%',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
     elevation: 4,
   },
   buttonText: {
-    color: '#ffffff',
+    color: '#ff0000',
     fontSize: 18,
     fontWeight: '600',
     marginRight: 8,

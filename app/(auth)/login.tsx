@@ -14,7 +14,6 @@ import {
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
@@ -62,11 +61,6 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <LinearGradient
-        colors={['#1a1a2e', '#16213e', '#0f3460']}
-        style={StyleSheet.absoluteFillObject}
-      />
-      
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -86,7 +80,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              placeholderTextColor="#999999"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -100,7 +94,7 @@ export default function LoginScreen() {
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              placeholderTextColor="#999999"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
@@ -163,6 +157,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#ffffff',
   },
   scrollContent: {
     flexGrow: 1,
@@ -181,18 +176,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
     elevation: 8,
   },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#0000ff',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#757575',
     textAlign: 'center',
   },
   form: {
@@ -201,19 +196,19 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#f5f5f5',
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#e0e0e0',
   },
   input: {
     flex: 1,
     paddingVertical: 16,
     paddingHorizontal: 12,
     fontSize: 16,
-    color: '#ffffff',
+    color: '#212121',
   },
   forgotPassword: {
     alignSelf: 'flex-end',
@@ -228,11 +223,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
     elevation: 4,
   },
   buttonText: {
-    color: '#ffffff',
+    color: '#ff0000',
     fontSize: 18,
     fontWeight: '600',
   },
@@ -244,10 +239,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#e0e0e0',
   },
   dividerText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: '#757575',
     paddingHorizontal: 16,
     fontSize: 14,
   },
@@ -255,7 +250,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: '#757575',
     fontSize: 16,
   },
   registerLink: {
@@ -270,7 +265,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
   },
   footerText: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#757575',
     fontSize: 12,
     marginLeft: 8,
     textAlign: 'center',
