@@ -122,7 +122,7 @@ export default function OnboardingScreen() {
         </View>
 
         <Pressable
-          style={[styles.button, { backgroundColor: '#FF0000' }]}
+          style={[styles.button, { backgroundColor: colors.danger }]}
           onPress={handleNext}
         >
           <Text style={styles.buttonText}>
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0066FF',
+    color: colors.primary,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   dot: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#0066FF',
+    backgroundColor: colors.primary,
     marginHorizontal: 4,
   },
   button: {
