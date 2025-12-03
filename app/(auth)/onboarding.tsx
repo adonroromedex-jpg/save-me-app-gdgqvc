@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   skipText: {
-    color: '#212121',
+    color: colors.danger,
     fontSize: 16,
     fontWeight: '600',
   },
