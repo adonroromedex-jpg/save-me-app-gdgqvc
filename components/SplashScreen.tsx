@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -56,6 +56,11 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           },
         ]}
       >
+        <Image
+          source={require('@/assets/images/natively-dark.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
           <IconSymbol name="lock.shield.fill" size={80} color="#ffffff" />
         </View>
@@ -78,6 +83,11 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 24,
   },
   logoContainer: {
     width: 160,

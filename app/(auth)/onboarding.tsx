@@ -8,6 +8,7 @@ import {
   Pressable,
   ScrollView,
   Platform,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, {
@@ -81,6 +82,15 @@ export default function OnboardingScreen() {
         colors={['#1a1a2e', '#16213e', '#0f3460']}
         style={StyleSheet.absoluteFillObject}
       />
+
+      <View style={styles.logoHeader}>
+        <Image
+          source={require('@/assets/images/natively-dark.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
+        <Text style={styles.headerTitle}>Save Me</Text>
+      </View>
 
       {currentIndex < onboardingData.length - 1 && (
         <Pressable style={styles.skipButton} onPress={handleSkip}>
@@ -227,6 +237,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#1a1a2e',
+  },
+  logoHeader: {
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? 60 : 70,
+    paddingBottom: 20,
+  },
+  headerLogo: {
+    width: 80,
+    height: 80,
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 1,
   },
   skipButton: {
     position: 'absolute',
