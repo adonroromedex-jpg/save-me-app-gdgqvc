@@ -1,3 +1,4 @@
+
 {
   "cli": {
     "version": ">= 13.2.0"
@@ -29,7 +30,7 @@
     "production": {
       "channel": "production",
       "android": {
-        "buildType": "apk"
+        "buildType": "aab"
       },
       "ios": {
         "buildConfiguration": "Release"
