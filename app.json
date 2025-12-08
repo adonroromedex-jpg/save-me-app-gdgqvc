@@ -69,8 +69,7 @@
         {
           "faceIDPermission": "Save Me uses Face ID to verify your identity and protect your private content from unauthorized access."
         }
-      ],
-      "expo-screen-capture"
+      ]
     ],
     "scheme": "saveme",
     "experiments": {
@@ -84,6 +83,5 @@
         "projectId": "00000000-0000-0000-0000-000000000000"
       }
     }
-  },
-  "scheme": "Save Me"
+  }
 }
