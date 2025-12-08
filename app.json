@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Save Me",
-    "slug": "Save Me",
-    "version": "1.0.0",
+    "slug": "save-me-app-gdgqvc",
+    "version": "1.0.7",
     "orientation": "portrait",
     "icon": "./assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png",
     "userInterfaceStyle": "automatic",
@@ -40,7 +40,8 @@
         "android.permission.ACCESS_ADSERVICES_AD_ID",
         "android.permission.ACCESS_ADSERVICES_ATTRIBUTION",
         "android.permission.ACCESS_ADSERVICES_TOPICS"
-      ]
+      ],
+      "versionCode": 8
     },
     "web": {
       "favicon": "./assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png",
