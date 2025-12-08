@@ -1,137 +1,138 @@
 
 import React, { useState, useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
-import { ScrollView, Pressable, StyleSheet, View, Text, Platform } from "react-native";
+import { ScrollView, Pressable, StyleSheet, View, Text, Alert, Platform } from "react-native";
 import { IconSymbol } from "@/components/IconSymbol";
-import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
-import * as SecureStore from 'expo-secure-store';
-
-interface AccessLogEntry {
-  id: string;
-  type: 'login' | 'file_view' | 'file_share' | 'file_delete' | 'failed_auth';
-  timestamp: number;
-  details: string;
-  userId?: string;
-  fileId?: string;
-  ipAddress?: string;
-  deviceInfo?: string;
-}
+import { getRecentEvents, getEventStatistics, clearEvents, exportEvents, EventLog } from "@/utils/eventLogger";
 
 export default function AccessLogScreen() {
-  const theme = useTheme();
   const router = useRouter();
-  const [logs, setLogs] = useState<AccessLogEntry[]>([]);
+  const [events, setEvents] = useState<EventLog[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadAccessLogs();
+    loadEvents();
   }, []);
 
-  const loadAccessLogs = async () => {
+  const loadEvents = async () => {
     try {
-      const logsJson = await SecureStore.getItemAsync('access_logs');
-      if (logsJson) {
-        const allLogs: AccessLogEntry[] = JSON.parse(logsJson);
-        // Sort by most recent first
-        allLogs.sort((a, b) => b.timestamp - a.timestamp);
-        setLogs(allLogs);
-        console.log('Loaded access logs:', allLogs.length);
-      } else {
-        // Create demo logs for testing
-        const demoLogs: AccessLogEntry[] = [
-          {
-            id: '1',
-            type: 'login',
-            timestamp: Date.now() - 3600000,
-            details: 'Successful login with biometric authentication',
-            deviceInfo: 'iPhone 14 Pro',
-          },
-          {
-            id: '2',
-            type: 'file_view',
-            timestamp: Date.now() - 7200000,
-            details: 'Viewed shared photo from alice_secure',
-            fileId: 'file_123',
-          },
-          {
-            id: '3',
-            type: 'file_share',
-            timestamp: Date.now() - 86400000,
-            details: 'Shared video with bob_private',
-            fileId: 'file_456',
-          },
-        ];
-        await SecureStore.setItemAsync('access_logs', JSON.stringify(demoLogs));
-        setLogs(demoLogs);
-      }
+      setLoading(true);
+      const recentEvents = await getRecentEvents(50);
+      const statistics = await getEventStatistics();
+      
+      setEvents(recentEvents);
+      setStats(statistics);
     } catch (error) {
-      console.error('Error loading access logs:', error);
+      console.error('Error loading events:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getLogIcon = (type: string) => {
+  const handleExport = async () => {
+    try {
+      const exported = await exportEvents();
+      Alert.alert('Export Events', `${events.length} events exported to JSON`, [
+        { text: 'OK' }
+      ]);
+      console.log('Exported events:', exported);
+    } catch (error) {
+      console.error('Error exporting events:', error);
+      Alert.alert('Error', 'Failed to export events');
+    }
+  };
+
+  const handleClear = () => {
+    Alert.alert(
+      'Clear All Logs',
+      'Are you sure you want to clear all access logs? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearEvents();
+              await loadEvents();
+              Alert.alert('Success', 'All logs cleared');
+            } catch (error) {
+              console.error('Error clearing events:', error);
+              Alert.alert('Error', 'Failed to clear logs');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const getEventIcon = (type: EventLog['type']): string => {
     switch (type) {
-      case 'login':
-        return 'person.fill.checkmark';
-      case 'file_view':
-        return 'eye.fill';
-      case 'file_share':
-        return 'paperplane.fill';
-      case 'file_delete':
-        return 'trash.fill';
-      case 'failed_auth':
-        return 'exclamationmark.triangle.fill';
-      default:
-        return 'info.circle.fill';
+      case 'share.create': return 'square.and.arrow.up.fill';
+      case 'share.open': return 'lock.open.fill';
+      case 'share.revoke': return 'xmark.circle.fill';
+      case 'screenshot.detected': return 'camera.fill';
+      case 'access.denied': return 'exclamationmark.shield.fill';
+      case 'otp.verified': return 'checkmark.shield.fill';
+      case 'otp.failed': return 'xmark.shield.fill';
+      default: return 'doc.text.fill';
     }
   };
 
-  const getLogColor = (type: string) => {
+  const getEventColor = (type: EventLog['type']): string => {
     switch (type) {
-      case 'login':
-        return colors.success;
-      case 'file_view':
-        return colors.primary;
-      case 'file_share':
-        return colors.accent;
-      case 'file_delete':
-        return colors.danger;
-      case 'failed_auth':
-        return colors.warning;
-      default:
-        return colors.textSecondary;
+      case 'share.create': return colors.success;
+      case 'share.open': return colors.accent;
+      case 'share.revoke': return colors.warning;
+      case 'screenshot.detected': return colors.danger;
+      case 'access.denied': return colors.danger;
+      case 'otp.verified': return colors.success;
+      case 'otp.failed': return colors.danger;
+      default: return colors.textSecondary;
     }
   };
 
-  const getLogTypeLabel = (type: string) => {
-    switch (type) {
-      case 'login':
-        return 'Login';
-      case 'file_view':
-        return 'File Viewed';
-      case 'file_share':
-        return 'File Shared';
-      case 'file_delete':
-        return 'File Deleted';
-      case 'failed_auth':
-        return 'Failed Auth';
-      default:
-        return 'Activity';
-    }
+  const formatEventType = (type: EventLog['type']): string => {
+    return type.split('.').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
   };
 
-  const formatTimestamp = (timestamp: number) => {
+  const formatTimestamp = (timestamp: number): string => {
     const date = new Date(timestamp);
-    const now = Date.now();
-    const diff = now - timestamp;
-
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    
+    return date.toLocaleDateString();
   };
+
+  const renderHeaderRight = () => (
+    <View style={styles.headerButtons}>
+      <Pressable
+        onPress={handleExport}
+        style={styles.headerButtonContainer}
+      >
+        <IconSymbol name="square.and.arrow.up" color={colors.primary} />
+      </Pressable>
+      <Pressable
+        onPress={handleClear}
+        style={styles.headerButtonContainer}
+      >
+        <IconSymbol name="trash" color={colors.danger} />
+      </Pressable>
+    </View>
+  );
 
   const renderHeaderLeft = () => (
     <Pressable
@@ -148,6 +149,7 @@ export default function AccessLogScreen() {
         <Stack.Screen
           options={{
             title: "Access Log",
+            headerRight: renderHeaderRight,
             headerLeft: renderHeaderLeft,
           }}
         />
@@ -161,67 +163,63 @@ export default function AccessLogScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.highlight }]}>
               <IconSymbol name="doc.text.fill" color={colors.card} size={32} />
             </View>
             <Text style={commonStyles.title}>Access Log</Text>
             <Text style={commonStyles.subtitle}>
-              Complete history of all access attempts and activities
+              Complete audit trail of all security events
             </Text>
           </View>
 
-          <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{logs.length}</Text>
-              <Text style={styles.statLabel}>Total Events</Text>
+          {stats && (
+            <View style={[styles.statsCard, { backgroundColor: colors.card }]}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.total}</Text>
+                <Text style={styles.statLabel}>Total Events</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.byType['share.create'] || 0}</Text>
+                <Text style={styles.statLabel}>Shares Created</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{stats.byType['screenshot.detected'] || 0}</Text>
+                <Text style={styles.statLabel}>Screenshots</Text>
+              </View>
             </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {logs.filter(l => l.type === 'login').length}
-              </Text>
-              <Text style={styles.statLabel}>Logins</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>
-                {logs.filter(l => l.type === 'failed_auth').length}
-              </Text>
-              <Text style={styles.statLabel}>Failed</Text>
-            </View>
-          </View>
+          )}
 
-          {logs.length === 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading events...</Text>
+            </View>
+          ) : events.length === 0 ? (
             <View style={styles.emptyState}>
-              <IconSymbol name="doc.text.fill" color={colors.textSecondary} size={64} />
-              <Text style={styles.emptyTitle}>No Activity Yet</Text>
+              <IconSymbol name="doc.text" color={colors.textSecondary} size={64} />
+              <Text style={styles.emptyTitle}>No Events Yet</Text>
               <Text style={styles.emptyDescription}>
-                Your access log will appear here as you use the app
+                All security events will be logged here for audit purposes
               </Text>
             </View>
           ) : (
             <>
               <Text style={styles.sectionTitle}>Recent Activity</Text>
-              {logs.map((log) => (
-                <View
-                  key={log.id}
-                  style={[styles.logCard, { backgroundColor: colors.card }]}
-                >
-                  <View style={[styles.logIcon, { backgroundColor: getLogColor(log.type) }]}>
-                    <IconSymbol name={getLogIcon(log.type)} color={colors.card} size={20} />
+              {events.map((event) => (
+                <View key={event.id} style={[styles.eventCard, { backgroundColor: colors.card }]}>
+                  <View style={[styles.eventIcon, { backgroundColor: getEventColor(event.type) }]}>
+                    <IconSymbol name={getEventIcon(event.type) as any} color={colors.card} size={20} />
                   </View>
-                  <View style={styles.logContent}>
-                    <View style={styles.logHeader}>
-                      <Text style={styles.logType}>{getLogTypeLabel(log.type)}</Text>
-                      <Text style={styles.logTime}>{formatTimestamp(log.timestamp)}</Text>
+                  <View style={styles.eventContent}>
+                    <Text style={styles.eventType}>{formatEventType(event.type)}</Text>
+                    <Text style={styles.eventDetails}>{event.details}</Text>
+                    <View style={styles.eventMeta}>
+                      <Text style={styles.eventTime}>{formatTimestamp(event.timestamp)}</Text>
+                      {event.shareId && (
+                        <Text style={styles.eventShareId}>• {event.shareId.substring(0, 12)}...</Text>
+                      )}
                     </View>
-                    <Text style={styles.logDetails}>{log.details}</Text>
-                    {log.deviceInfo && (
-                      <View style={styles.logMeta}>
-                        <IconSymbol name="iphone" color={colors.textSecondary} size={12} />
-                        <Text style={styles.logMetaText}>{log.deviceInfo}</Text>
-                      </View>
-                    )}
                   </View>
                 </View>
               ))}
@@ -229,10 +227,13 @@ export default function AccessLogScreen() {
           )}
 
           <View style={[styles.infoCard, { backgroundColor: colors.accent }]}>
-            <IconSymbol name="info.circle.fill" color={colors.card} size={24} />
-            <Text style={styles.infoText}>
-              Access logs are stored securely and encrypted. They help you monitor all activity on your account.
-            </Text>
+            <IconSymbol name="shield.fill" color={colors.card} size={24} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Security Audit</Text>
+              <Text style={styles.infoText}>
+                All events are logged locally and encrypted. Export logs for external audit or compliance purposes.
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -254,6 +255,9 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: 24,
+  },
+  headerButtons: {
+    flexDirection: 'row',
   },
   headerButtonContainer: {
     padding: 8,
@@ -287,67 +291,20 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     color: colors.textSecondary,
+    textAlign: 'center',
   },
   statDivider: {
     width: 1,
     backgroundColor: colors.border,
     marginHorizontal: 12,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 16,
-  },
-  logCard: {
-    flexDirection: 'row',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
-  },
-  logIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+  loadingContainer: {
+    paddingVertical: 60,
     alignItems: 'center',
-    marginRight: 12,
   },
-  logContent: {
-    flex: 1,
-  },
-  logHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  logType: {
+  loadingText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  logTime: {
-    fontSize: 12,
     color: colors.textSecondary,
-  },
-  logDetails: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  logMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  logMetaText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginLeft: 4,
   },
   emptyState: {
     alignItems: 'center',
@@ -367,18 +324,75 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     lineHeight: 20,
   },
-  infoCard: {
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  eventCard: {
+    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
+  },
+  eventIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  eventContent: {
+    flex: 1,
+  },
+  eventType: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  eventDetails: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  eventMeta: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  eventTime: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  eventShareId: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: 4,
+  },
+  infoCard: {
+    flexDirection: 'row',
     padding: 16,
     borderRadius: 12,
     marginTop: 24,
   },
-  infoText: {
+  infoContent: {
     flex: 1,
-    fontSize: 14,
-    color: colors.card,
     marginLeft: 12,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.card,
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: colors.card,
     lineHeight: 20,
   },
 });

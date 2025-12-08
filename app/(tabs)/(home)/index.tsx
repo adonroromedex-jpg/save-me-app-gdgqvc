@@ -82,11 +82,11 @@ export default function HomeScreen() {
       route: "/private-camera",
     },
     {
-      title: "Controlled Sharing",
-      description: "Share with unique codes and time-limited access",
+      title: "Secure Sharing",
+      description: "Share with E2E encryption, OTP codes, and revocable access",
       icon: "square.and.arrow.up.fill",
       color: colors.accent,
-      route: "/controlled-sharing",
+      route: "/secure-sharing",
     },
     {
       title: "Access Log",
@@ -222,6 +222,10 @@ export default function HomeScreen() {
                   router.push("/(tabs)/(home)/secure-drive");
                 } else if (feature.route === "/private-camera") {
                   router.push("/(tabs)/(home)/private-camera");
+                } else if (feature.route === "/secure-sharing") {
+                  router.push("/(tabs)/(home)/secure-sharing");
+                } else if (feature.route === "/access-log") {
+                  router.push("/(tabs)/(home)/access-log");
                 } else {
                   Alert.alert("Coming Soon", `${feature.title} feature will be available soon!`);
                 }
