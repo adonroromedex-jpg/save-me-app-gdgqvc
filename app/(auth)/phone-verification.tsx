@@ -25,10 +25,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PhoneVerificationScreen() {
   const router = useRouter();
-  const [step, setStep] = useState<'phone' | 'code' | 'email'>('phone');
+  const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [countryCode, setCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
@@ -98,26 +97,12 @@ export default function PhoneVerificationScreen() {
       await setCurrentUserPhone(phoneNumber, countryCode);
       await AsyncStorage.setItem('phone_verified', 'true');
       
-      // Move to email step (optional)
-      setStep('email');
-    } else {
-      Alert.alert('Error', result.error || 'Verification failed');
-    }
-  };
-
-  const handleEmailSubmit = async () => {
-    // Email is optional, so we can skip it
-    // Check if user is already registered
-    const auth = await AsyncStorage.getItem('is_authenticated');
-    if (auth === 'true') {
-      // User already registered, go to language selection
+      console.log('Phone verified successfully, navigating to welcome-language');
+      
+      // Navigate to welcome screen - DO NOT check authentication here
       router.replace('/(auth)/welcome-language');
     } else {
-      // New user, save email if provided and go to registration
-      if (email) {
-        await AsyncStorage.setItem('user_email_temp', email);
-      }
-      router.replace('/(auth)/register');
+      Alert.alert('Error', result.error || 'Verification failed');
     }
   };
 
@@ -142,78 +127,6 @@ export default function PhoneVerificationScreen() {
       Alert.alert('Error', result.error || 'Failed to resend code');
     }
   };
-
-  if (step === 'email') {
-    return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <LinearGradient
-          colors={['#1a1a2e', '#16213e', '#0f3460']}
-          style={StyleSheet.absoluteFillObject}
-        />
-
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.header}>
-            <View style={[styles.logoContainer, { backgroundColor: colors.accent }]}>
-              <IconSymbol name="envelope.fill" size={60} color="#ffffff" />
-            </View>
-            <Text style={styles.title}>Email Address (Optional)</Text>
-            <Text style={styles.subtitle}>
-              Add your email for account recovery and notifications
-            </Text>
-          </View>
-
-          <View style={styles.form}>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email (optional)"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <Pressable
-              style={[styles.button, { backgroundColor: colors.accent }]}
-              onPress={handleEmailSubmit}
-            >
-              <Text style={styles.buttonText}>Continue</Text>
-            </Pressable>
-
-            <Pressable
-              style={styles.skipButton}
-              onPress={handleEmailSubmit}
-            >
-              <Text style={styles.skipText}>Skip for now</Text>
-            </Pressable>
-          </View>
-
-          <View style={[styles.infoCard, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}>
-            <IconSymbol name="info.circle.fill" size={24} color={colors.accent} />
-            <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Why add an email?</Text>
-              <Text style={styles.infoText}>
-                • Account recovery if you forget your PIN{'\n'}
-                • Important security notifications{'\n'}
-                • Optional - you can skip this step
-              </Text>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    );
-  }
 
   if (step === 'code') {
     return (
@@ -570,15 +483,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
-  },
-  skipButton: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  skipText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 16,
-    fontWeight: '500',
   },
   countryPickerContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

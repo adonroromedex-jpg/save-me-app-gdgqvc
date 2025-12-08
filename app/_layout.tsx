@@ -28,73 +28,97 @@ export const unstable_settings = {
   initialRouteName: "(auth)/onboarding",
 };
 
-function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolean, phoneVerified: boolean | null) {
+function useProtectedRoute(
+  onboardingComplete: boolean | null,
+  phoneVerified: boolean | null,
+  languageSelected: boolean | null,
+  pinSetupComplete: boolean | null,
+  needsAppLock: boolean
+) {
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated === null || phoneVerified === null) {
+    // Wait until all states are loaded
+    if (
+      onboardingComplete === null ||
+      phoneVerified === null ||
+      languageSelected === null ||
+      pinSetupComplete === null
+    ) {
       return;
     }
 
     const inAuthGroup = segments[0] === '(auth)';
-    const isAppLockScreen = segments[segments.length - 1] === 'app-lock';
-    const isPhoneVerificationScreen = segments[segments.length - 1] === 'phone-verification';
-    const isOnboardingScreen = segments[segments.length - 1] === 'onboarding';
-    const isWelcomeLanguageScreen = segments[segments.length - 1] === 'welcome-language';
-    const isSetupPinScreen = segments[segments.length - 1] === 'setup-pin';
-    const isRegisterScreen = segments[segments.length - 1] === 'register';
+    const currentScreen = segments[segments.length - 1];
 
-    console.log('Protected route check:', { 
-      isAuthenticated, 
-      needsAppLock, 
+    console.log('Navigation check:', {
+      onboardingComplete,
       phoneVerified,
-      inAuthGroup, 
-      isAppLockScreen,
-      isPhoneVerificationScreen,
-      segments 
+      languageSelected,
+      pinSetupComplete,
+      needsAppLock,
+      currentScreen,
+      segments
     });
 
-    // If not phone verified and not on phone verification or onboarding screen, redirect to phone verification
-    if (!phoneVerified && !isPhoneVerificationScreen && !isOnboardingScreen) {
-      console.log('Redirecting to phone verification - phone not verified');
-      router.replace('/(auth)/phone-verification');
-      return;
-    }
-
-    // If app lock is needed and not on app-lock or setup screens, redirect to app-lock
-    if (isAuthenticated && phoneVerified && needsAppLock && !isAppLockScreen && !isSetupPinScreen && !isWelcomeLanguageScreen) {
-      console.log('Redirecting to app-lock - authentication required');
-      router.replace('/(auth)/app-lock');
-      return;
-    }
-
-    // If not authenticated and not in auth group, redirect to onboarding
-    if (!isAuthenticated && !inAuthGroup) {
-      console.log('Redirecting to onboarding - not authenticated');
+    // Step 1: If onboarding not complete, go to onboarding
+    if (!onboardingComplete && currentScreen !== 'onboarding') {
+      console.log('→ Redirecting to onboarding');
       router.replace('/(auth)/onboarding');
       return;
     }
 
-    // If authenticated, phone verified, app lock passed, and in auth group (but not on setup screens), redirect to home
-    if (isAuthenticated && phoneVerified && !needsAppLock && inAuthGroup && !isAppLockScreen && !isPhoneVerificationScreen && !isWelcomeLanguageScreen && !isSetupPinScreen && !isRegisterScreen) {
-      console.log('Redirecting to home - authenticated and unlocked');
-      router.replace('/(tabs)/(home)/');
+    // Step 2: If phone not verified, go to phone verification
+    if (onboardingComplete && !phoneVerified && currentScreen !== 'phone-verification') {
+      console.log('→ Redirecting to phone-verification');
+      router.replace('/(auth)/phone-verification');
+      return;
     }
-  }, [isAuthenticated, needsAppLock, phoneVerified, segments, router]);
+
+    // Step 3: If language not selected, go to welcome-language
+    if (onboardingComplete && phoneVerified && !languageSelected && currentScreen !== 'welcome-language') {
+      console.log('→ Redirecting to welcome-language');
+      router.replace('/(auth)/welcome-language');
+      return;
+    }
+
+    // Step 4: If PIN not set up, go to setup-pin
+    if (onboardingComplete && phoneVerified && languageSelected && !pinSetupComplete && currentScreen !== 'setup-pin') {
+      console.log('→ Redirecting to setup-pin');
+      router.replace('/(auth)/setup-pin');
+      return;
+    }
+
+    // Step 5: If everything is complete but needs app lock, go to app-lock
+    if (onboardingComplete && phoneVerified && languageSelected && pinSetupComplete && needsAppLock && currentScreen !== 'app-lock') {
+      console.log('→ Redirecting to app-lock');
+      router.replace('/(auth)/app-lock');
+      return;
+    }
+
+    // Step 6: If everything is complete and unlocked, go to home
+    if (onboardingComplete && phoneVerified && languageSelected && pinSetupComplete && !needsAppLock && inAuthGroup) {
+      console.log('→ Redirecting to home');
+      router.replace('/(tabs)/(home)/');
+      return;
+    }
+  }, [onboardingComplete, phoneVerified, languageSelected, pinSetupComplete, needsAppLock, segments, router]);
 }
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const networkState = useNetworkState();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
   const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
+  const [languageSelected, setLanguageSelected] = useState<boolean | null>(null);
+  const [pinSetupComplete, setPinSetupComplete] = useState<boolean | null>(null);
   const [needsAppLock, setNeedsAppLock] = useState(false);
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  useProtectedRoute(isAuthenticated, needsAppLock, phoneVerified);
+  useProtectedRoute(onboardingComplete, phoneVerified, languageSelected, pinSetupComplete, needsAppLock);
 
   // Enable global screenshot protection
   useEffect(() => {
@@ -123,23 +147,28 @@ export default function RootLayout() {
     }
   };
 
-  // Check authentication status and app lock
-  const checkAuth = async () => {
+  // Check onboarding status
+  const checkOnboardingStatus = async () => {
     try {
-      const authStatus = await AsyncStorage.getItem('is_authenticated');
-      const phoneVerifiedStatus = await AsyncStorage.getItem('phone_verified');
+      const onboarding = await AsyncStorage.getItem('onboarding_complete');
+      const phone = await AsyncStorage.getItem('phone_verified');
+      const language = await AsyncStorage.getItem('language_selected');
+      const pin = await AsyncStorage.getItem('pin_setup_complete');
       
-      console.log('Auth status from storage:', authStatus);
-      console.log('Phone verified status from storage:', phoneVerifiedStatus);
+      console.log('Onboarding status:', {
+        onboarding: onboarding === 'true',
+        phone: phone === 'true',
+        language: language === 'true',
+        pin: pin === 'true'
+      });
       
-      const authenticated = authStatus === 'true';
-      const verified = phoneVerifiedStatus === 'true';
-      
-      setIsAuthenticated(authenticated);
-      setPhoneVerified(verified);
+      setOnboardingComplete(onboarding === 'true');
+      setPhoneVerified(phone === 'true');
+      setLanguageSelected(language === 'true');
+      setPinSetupComplete(pin === 'true');
 
-      // ALWAYS require app lock on every app open (no session caching)
-      if (authenticated && verified) {
+      // If all onboarding steps are complete, always require app lock on app open
+      if (onboarding === 'true' && phone === 'true' && language === 'true' && pin === 'true') {
         const lockEnabled = await isAppLockEnabled();
         console.log('App lock enabled:', lockEnabled);
         // Always set needsAppLock to true to enforce passcode on every open
@@ -148,16 +177,18 @@ export default function RootLayout() {
         setNeedsAppLock(false);
       }
     } catch (error) {
-      console.error('Error checking auth status:', error);
-      setIsAuthenticated(false);
+      console.error('Error checking onboarding status:', error);
+      setOnboardingComplete(false);
       setPhoneVerified(false);
+      setLanguageSelected(false);
+      setPinSetupComplete(false);
       setNeedsAppLock(false);
     }
   };
 
-  // Initial auth check
+  // Initial check
   useEffect(() => {
-    checkAuth();
+    checkOnboardingStatus();
     
     // Run self-destruct cleanup on app start
     checkAndExecuteSelfDestructs().catch(error => {
@@ -165,12 +196,12 @@ export default function RootLayout() {
     });
   }, []);
 
-  // Listen for app state changes to re-check auth and run cleanup
+  // Listen for app state changes
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
-        console.log('App became active, rechecking auth and running cleanup');
-        checkAuth();
+        console.log('App became active, rechecking status and running cleanup');
+        checkOnboardingStatus();
         
         // Run self-destruct cleanup when app becomes active
         checkAndExecuteSelfDestructs().catch(error => {
@@ -202,10 +233,16 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded && isAuthenticated !== null && phoneVerified !== null) {
+    if (
+      loaded &&
+      onboardingComplete !== null &&
+      phoneVerified !== null &&
+      languageSelected !== null &&
+      pinSetupComplete !== null
+    ) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isAuthenticated, phoneVerified]);
+  }, [loaded, onboardingComplete, phoneVerified, languageSelected, pinSetupComplete]);
 
   React.useEffect(() => {
     if (
@@ -219,7 +256,13 @@ export default function RootLayout() {
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
-  if (!loaded || isAuthenticated === null || phoneVerified === null) {
+  if (
+    !loaded ||
+    onboardingComplete === null ||
+    phoneVerified === null ||
+    languageSelected === null ||
+    pinSetupComplete === null
+  ) {
     return null;
   }
 

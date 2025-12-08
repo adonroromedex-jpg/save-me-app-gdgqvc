@@ -26,8 +26,10 @@ export default function WelcomeLanguageScreen() {
     await setLocale(selectedLocale);
     await AsyncStorage.setItem('language_selected', 'true');
     
-    // Navigate to app-lock to set up PIN
-    router.replace('/(auth)/app-lock');
+    console.log('Language selected, navigating to setup-pin');
+    
+    // Navigate to PIN setup
+    router.replace('/(auth)/setup-pin');
   };
 
   return (

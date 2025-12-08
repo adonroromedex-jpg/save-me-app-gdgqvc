@@ -18,25 +18,11 @@ export default function AppLockScreen() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [authMethodName, setAuthMethodName] = useState('Biometric Authentication');
   const [loading, setLoading] = useState(false);
-  const [pinSetupComplete, setPinSetupComplete] = useState(false);
 
   useEffect(() => {
-    checkPinSetup();
     checkBiometricAvailability();
+    attemptBiometricAuth();
   }, []);
-
-  const checkPinSetup = async () => {
-    const setupComplete = await AsyncStorage.getItem('pin_setup_complete');
-    setPinSetupComplete(setupComplete === 'true');
-    
-    if (setupComplete !== 'true') {
-      // Redirect to PIN setup
-      router.replace('/(auth)/setup-pin');
-    } else {
-      // Try biometric auth
-      attemptBiometricAuth();
-    }
-  };
 
   const checkBiometricAvailability = async () => {
     const available = await isBiometricAvailable();
@@ -56,7 +42,7 @@ export default function AppLockScreen() {
       });
 
       if (success) {
-        await AsyncStorage.setItem('is_authenticated', 'true');
+        console.log('Biometric auth successful, navigating to home');
         router.replace('/(tabs)/(home)/');
       }
     }
@@ -73,7 +59,7 @@ export default function AppLockScreen() {
     setLoading(false);
 
     if (isValid) {
-      await AsyncStorage.setItem('is_authenticated', 'true');
+      console.log('PIN verified successfully, navigating to home');
       router.replace('/(tabs)/(home)/');
     } else {
       Alert.alert('Invalid PIN', 'The PIN you entered is incorrect');
@@ -87,7 +73,7 @@ export default function AppLockScreen() {
     });
 
     if (success) {
-      await AsyncStorage.setItem('is_authenticated', 'true');
+      console.log('Biometric auth successful, navigating to home');
       router.replace('/(tabs)/(home)/');
     }
   };

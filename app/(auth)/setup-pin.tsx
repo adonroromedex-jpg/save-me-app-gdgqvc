@@ -46,7 +46,12 @@ export default function SetupPINScreen() {
     setLoading(false);
 
     if (success) {
+      // Mark onboarding as complete
       await AsyncStorage.setItem('pin_setup_complete', 'true');
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      await AsyncStorage.setItem('is_authenticated', 'true');
+      
+      console.log('PIN setup complete, onboarding finished, navigating to home');
       
       Alert.alert(
         'Success',
@@ -54,7 +59,10 @@ export default function SetupPINScreen() {
         [
           {
             text: 'Continue',
-            onPress: () => router.replace('/(tabs)/(home)/'),
+            onPress: () => {
+              // Navigate to home
+              router.replace('/(tabs)/(home)/');
+            },
           },
         ]
       );
