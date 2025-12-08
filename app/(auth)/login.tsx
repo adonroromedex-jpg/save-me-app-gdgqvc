@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isPhoneVerified } from '@/utils/phoneAuth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,6 +40,24 @@ export default function LoginScreen() {
         const userData = JSON.parse(storedUser);
         
         if (userData.email === email && userData.password === password) {
+          // Check if phone is verified
+          const phoneVerified = await AsyncStorage.getItem('phone_verified');
+          
+          if (phoneVerified !== 'true') {
+            Alert.alert(
+              'Phone Verification Required',
+              'Please verify your phone number to continue.',
+              [
+                {
+                  text: 'Verify Now',
+                  onPress: () => router.push('/(auth)/phone-verification')
+                }
+              ]
+            );
+            setLoading(false);
+            return;
+          }
+
           // Check if 2FA is enabled
           const twoFactorEnabled = await AsyncStorage.getItem('2fa_enabled');
           
@@ -51,7 +70,8 @@ export default function LoginScreen() {
             // No 2FA, proceed with login
             await AsyncStorage.setItem('is_authenticated', 'true');
             await AsyncStorage.setItem('user_email', email);
-            router.replace('/(tabs)/(home)/');
+            // Will be redirected to app-lock by _layout.tsx
+            router.replace('/(auth)/app-lock');
           }
         } else {
           Alert.alert('Error', 'Invalid email or password');
@@ -158,6 +178,13 @@ export default function LoginScreen() {
           <IconSymbol name="checkmark.shield.fill" size={24} color={colors.primary} />
           <Text style={styles.footerText}>
             Your data is encrypted with AES-256 encryption
+          </Text>
+        </View>
+
+        <View style={[styles.securityBadge, { backgroundColor: colors.success }]}>
+          <IconSymbol name="phone.fill" size={16} color={colors.card} />
+          <Text style={styles.securityBadgeText}>
+            Phone verification required for all users
           </Text>
         </View>
       </ScrollView>
@@ -274,11 +301,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 'auto',
     paddingTop: 24,
+    marginBottom: 16,
   },
   footerText: {
     color: '#757575',
     fontSize: 12,
     marginLeft: 8,
     textAlign: 'center',
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  securityBadgeText: {
+    color: colors.card,
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

@@ -1,115 +1,121 @@
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Platform, Alert } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface Language {
-  code: string;
-  name: string;
-  nativeName: string;
-  flag: string;
-}
-
-const languages: Language[] = [
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-  { code: 'ht', name: 'Haitian Creole', nativeName: 'Kreyòl Ayisyen', flag: '🇭🇹' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' },
-];
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getAvailableLocales, detectDeviceLanguage } from '@/i18n';
 
 export default function LanguageScreen() {
   const router = useRouter();
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const { locale, setLocale, t } = useLanguage();
+  const [selectedLocale, setSelectedLocale] = useState(locale);
+  const availableLocales = getAvailableLocales();
 
   useEffect(() => {
-    loadLanguage();
-  }, []);
+    setSelectedLocale(locale);
+  }, [locale]);
 
-  const loadLanguage = async () => {
-    try {
-      const lang = await AsyncStorage.getItem('app_language');
-      if (lang) {
-        setSelectedLanguage(lang);
-      }
-    } catch (error) {
-      console.error('Error loading language:', error);
-    }
+  const handleSelectLanguage = async (localeCode: string) => {
+    setSelectedLocale(localeCode);
+    await setLocale(localeCode);
+    
+    Alert.alert(
+      t('common.success'),
+      'Language updated successfully! All screens will update instantly.',
+      [{ text: t('common.ok') }]
+    );
   };
 
-  const handleSelectLanguage = async (code: string) => {
-    try {
-      await AsyncStorage.setItem('app_language', code);
-      setSelectedLanguage(code);
-    } catch (error) {
-      console.error('Error saving language:', error);
-    }
+  const handleAutoDetect = () => {
+    const detectedLocale = detectDeviceLanguage();
+    handleSelectLanguage(detectedLocale);
   };
+
+  const renderHeaderLeft = () => (
+    <Pressable
+      onPress={() => router.back()}
+      style={styles.headerButtonContainer}
+    >
+      <IconSymbol name="chevron.left" color={colors.primary} />
+    </Pressable>
+  );
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Language',
-          headerBackTitle: 'Back',
-        }}
-      />
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['bottom']}>
+      {Platform.OS === 'ios' && (
+        <Stack.Screen
+          options={{
+            title: t('profile.language'),
+            headerLeft: renderHeaderLeft,
+          }}
+        />
+      )}
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[
+            styles.scrollContent,
+            Platform.OS !== 'ios' && styles.scrollContentWithTabBar
+          ]}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text style={styles.title}>Choose Language</Text>
+            <View style={[styles.iconContainer, { backgroundColor: colors.primary }]}>
+              <IconSymbol name="globe" color={colors.card} size={32} />
+            </View>
+            <Text style={styles.title}>{t('profile.language')}</Text>
             <Text style={styles.subtitle}>
-              Select your preferred language for the app
+              Select your preferred language. Changes apply instantly without restarting the app.
             </Text>
           </View>
 
-          <View style={[styles.languageList, { backgroundColor: colors.card }]}>
-            {languages.map((language, index) => (
-              <React.Fragment key={language.code}>
-                <Pressable
-                  style={styles.languageItem}
-                  onPress={() => handleSelectLanguage(language.code)}
-                >
-                  <View style={styles.languageLeft}>
-                    <Text style={styles.flag}>{language.flag}</Text>
-                    <View style={styles.languageInfo}>
-                      <Text style={styles.languageName}>{language.name}</Text>
-                      <Text style={styles.languageNative}>{language.nativeName}</Text>
-                    </View>
-                  </View>
-                  {selectedLanguage === language.code && (
-                    <IconSymbol name="checkmark.circle.fill" size={24} color={colors.primary} />
-                  )}
-                </Pressable>
-                {index < languages.length - 1 && <View style={styles.divider} />}
-              </React.Fragment>
-            ))}
-          </View>
+          <Pressable
+            style={[styles.autoDetectButton, { backgroundColor: colors.accent }]}
+            onPress={handleAutoDetect}
+          >
+            <IconSymbol name="wand.and.stars" color={colors.card} size={20} />
+            <Text style={styles.autoDetectText}>Auto-Detect Device Language</Text>
+          </Pressable>
+
+          <Text style={styles.sectionTitle}>Available Languages</Text>
+
+          {availableLocales.map((lang) => (
+            <Pressable
+              key={lang.code}
+              style={[
+                styles.languageCard,
+                { backgroundColor: colors.card },
+                selectedLocale === lang.code && [styles.languageCardSelected, { borderColor: colors.primary }]
+              ]}
+              onPress={() => handleSelectLanguage(lang.code)}
+            >
+              <View style={styles.languageInfo}>
+                <Text style={styles.languageName}>{lang.nativeName}</Text>
+                <Text style={styles.languageNameEnglish}>{lang.name}</Text>
+              </View>
+              {selectedLocale === lang.code && (
+                <View style={[styles.checkmark, { backgroundColor: colors.primary }]}>
+                  <IconSymbol name="checkmark" color={colors.card} size={16} />
+                </View>
+              )}
+            </Pressable>
+          ))}
 
           <View style={[styles.infoCard, { backgroundColor: colors.primary }]}>
-            <IconSymbol name="info.circle.fill" size={24} color="#ffffff" />
+            <IconSymbol name="info.circle.fill" color={colors.card} size={24} />
             <View style={styles.infoContent}>
-              <Text style={styles.infoTitle}>Language Support</Text>
+              <Text style={styles.infoTitle}>Instant Language Updates</Text>
               <Text style={styles.infoText}>
-                The app will restart to apply the new language settings
+                • All screens update immediately{'\n'}
+                • No app restart required{'\n'}
+                • Automatic device language detection{'\n'}
+                • Supports 4 languages
               </Text>
             </View>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </>
   );
 }
@@ -122,8 +128,23 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     paddingHorizontal: 20,
   },
+  scrollContentWithTabBar: {
+    paddingBottom: 100,
+  },
+  headerButtonContainer: {
+    padding: 8,
+  },
   header: {
+    alignItems: 'center',
     marginBottom: 24,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: {
     fontSize: 28,
@@ -134,51 +155,70 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 14,
     color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
-  languageList: {
-    borderRadius: 16,
-    overflow: 'hidden',
+  autoDetectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
     marginBottom: 24,
-    boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-    elevation: 3,
   },
-  languageItem: {
+  autoDetectText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  languageCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    elevation: 2,
   },
-  languageLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  flag: {
-    fontSize: 32,
-    marginRight: 16,
+  languageCardSelected: {
+    borderWidth: 2,
   },
   languageInfo: {
     flex: 1,
   },
   languageName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  languageNative: {
+  languageNameEnglish: {
     fontSize: 14,
     color: colors.textSecondary,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 72,
+  checkmark: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   infoCard: {
     flexDirection: 'row',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 12,
+    marginTop: 24,
   },
   infoContent: {
     flex: 1,
@@ -187,13 +227,12 @@ const styles = StyleSheet.create({
   infoTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 4,
+    color: colors.card,
+    marginBottom: 8,
   },
   infoText: {
-    fontSize: 14,
-    color: '#ffffff',
+    fontSize: 13,
+    color: colors.card,
     lineHeight: 20,
-    opacity: 0.9,
   },
 });

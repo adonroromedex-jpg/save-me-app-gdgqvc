@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "Save Me",
@@ -68,7 +69,8 @@
         {
           "faceIDPermission": "Save Me uses Face ID to verify your identity and protect your private content from unauthorized access."
         }
-      ]
+      ],
+      "expo-screen-capture"
     ],
     "scheme": "saveme",
     "experiments": {

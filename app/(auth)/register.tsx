@@ -43,6 +43,22 @@ export default function RegisterScreen() {
       return;
     }
 
+    // Check if phone is verified
+    const phoneVerified = await AsyncStorage.getItem('phone_verified');
+    if (phoneVerified !== 'true') {
+      Alert.alert(
+        'Phone Verification Required',
+        'Please verify your phone number before creating an account.',
+        [
+          {
+            text: 'Verify Now',
+            onPress: () => router.push('/(auth)/phone-verification')
+          }
+        ]
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -73,9 +89,9 @@ export default function RegisterScreen() {
           {
             text: 'OK',
             onPress: () => {
-              console.log('Navigating to home after registration');
-              // The _layout.tsx will automatically redirect to home
-              // because is_authenticated is now true
+              console.log('Navigating to app-lock after registration');
+              // The _layout.tsx will automatically redirect to app-lock
+              router.replace('/(auth)/app-lock');
             },
           },
         ]
@@ -188,7 +204,7 @@ export default function RegisterScreen() {
           <Pressable
             style={[styles.button, { backgroundColor: colors.secondary }]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || !name || !email || !password || !confirmPassword}
           >
             <Text style={styles.buttonText}>
               {loading ? 'Creating Account...' : 'Create Account'}
@@ -203,6 +219,13 @@ export default function RegisterScreen() {
               Already have an account? <Text style={styles.loginLink}>Sign In</Text>
             </Text>
           </Pressable>
+        </View>
+
+        <View style={[styles.securityBadge, { backgroundColor: colors.success }]}>
+          <IconSymbol name="checkmark.shield.fill" size={20} color="#ffffff" />
+          <Text style={styles.securityBadgeText}>
+            Phone verification required • Maximum security
+          </Text>
         </View>
 
         <View style={styles.footer}>
@@ -303,6 +326,21 @@ const styles = StyleSheet.create({
   loginLink: {
     color: colors.primary,
     fontWeight: '600',
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  securityBadgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   footer: {
     marginTop: 'auto',

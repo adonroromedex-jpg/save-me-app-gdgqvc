@@ -1,226 +1,139 @@
 
-import React, { useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  Pressable,
-  ScrollView,
-  Platform,
-  Image,
-} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  interpolate,
-  Extrapolate,
-} from 'react-native-reanimated';
+import { LinearGradient } from 'expo-linear-gradient';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const onboardingData = [
   {
-    id: 1,
-    title: 'Secure Your Privacy',
-    description: 'Protect your intimate photos and videos with military-grade AES-256 encryption. Your content stays safe and private.',
-    icon: 'lock.shield.fill',
+    title: 'Secure Phone Authentication',
+    description: 'Verify your phone number to access the app and connect with other verified users securely.',
+    icon: 'phone.fill',
     color: colors.primary,
   },
   {
-    id: 2,
-    title: 'Controlled Sharing',
-    description: 'Share content with unique one-time codes and time-limited access. You decide who sees what and for how long.',
-    icon: 'square.and.arrow.up.fill',
+    title: 'End-to-End Encryption',
+    description: 'All your photos and videos are encrypted locally with AES-256 before sharing. Only you control access.',
+    icon: 'lock.shield.fill',
     color: colors.secondary,
   },
   {
-    id: 3,
-    title: 'Complete Protection',
-    description: 'Anti-screenshot, auto-delete after 24h, facial recognition, and panic delete. Your privacy is our priority.',
-    icon: 'checkmark.shield.fill',
-    color: colors.accent,
+    title: 'Screenshot Protection',
+    description: 'Advanced security blocks screenshots and screen recordings. All access attempts are logged.',
+    icon: 'eye.slash.fill',
+    color: colors.danger,
+  },
+  {
+    title: 'Auto-Delete After 24h',
+    description: 'Shared content automatically self-destructs after 24 hours. No traces left behind.',
+    icon: 'timer',
+    color: colors.warning,
+  },
+  {
+    title: 'Passcode on Every Open',
+    description: 'App requires authentication every time you open it. No session caching for maximum security.',
+    icon: 'key.fill',
+    color: colors.success,
   },
 ];
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const scrollViewRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useSharedValue(0);
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
 
-  const handleScroll = (event: any) => {
-    const offsetX = event.nativeEvent.contentOffset.x;
-    scrollX.value = offsetX;
-    const index = Math.round(offsetX / SCREEN_WIDTH);
-    setCurrentIndex(index);
-  };
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: translateX.value }],
+      opacity: opacity.value,
+    };
+  });
 
   const handleNext = () => {
     if (currentIndex < onboardingData.length - 1) {
-      scrollViewRef.current?.scrollTo({
-        x: SCREEN_WIDTH * (currentIndex + 1),
-        animated: true,
+      opacity.value = withTiming(0, { duration: 200 }, () => {
+        translateX.value = withSpring(0);
+        opacity.value = withTiming(1, { duration: 200 });
       });
+      setCurrentIndex(currentIndex + 1);
     } else {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/phone-verification');
     }
   };
 
   const handleSkip = () => {
-    router.replace('/(auth)/login');
+    router.replace('/(auth)/phone-verification');
   };
+
+  const currentSlide = onboardingData[currentIndex];
 
   return (
     <View style={styles.container}>
-      <View style={styles.logoHeader}>
-        <Image
-          source={require('@/assets/images/b149f8e5-a0ed-4a5d-8af5-64a708c8a1f1.png')}
-          style={styles.headerLogo}
-          resizeMode="contain"
-        />
+      <LinearGradient
+        colors={['#1a1a2e', '#16213e', '#0f3460']}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      <View style={styles.header}>
+        <Text style={styles.appName}>Save Me</Text>
+        {currentIndex < onboardingData.length - 1 && (
+          <Pressable onPress={handleSkip}>
+            <Text style={styles.skipText}>Skip</Text>
+          </Pressable>
+        )}
       </View>
 
-      {currentIndex < onboardingData.length - 1 && (
-        <Pressable style={styles.skipButton} onPress={handleSkip}>
-          <Text style={styles.skipText}>Skip</Text>
-        </Pressable>
-      )}
+      <Animated.View style={[styles.content, animatedStyle]}>
+        <View style={[styles.iconContainer, { backgroundColor: currentSlide.color }]}>
+          <IconSymbol name={currentSlide.icon as any} size={80} color="#ffffff" />
+        </View>
 
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        style={styles.scrollView}
-      >
-        {onboardingData.map((item, index) => (
-          <OnboardingSlide
-            key={item.id}
-            item={item}
-            index={index}
-            scrollX={scrollX}
-          />
-        ))}
-      </ScrollView>
+        <Text style={styles.title}>{currentSlide.title}</Text>
+        <Text style={styles.description}>{currentSlide.description}</Text>
+      </Animated.View>
 
       <View style={styles.footer}>
         <View style={styles.pagination}>
           {onboardingData.map((_, index) => (
-            <PaginationDot
+            <View
               key={index}
-              index={index}
-              scrollX={scrollX}
+              style={[
+                styles.paginationDot,
+                index === currentIndex && styles.paginationDotActive,
+                { backgroundColor: index === currentIndex ? colors.primary : 'rgba(255, 255, 255, 0.3)' },
+              ]}
             />
           ))}
         </View>
 
         <Pressable
-          style={[styles.button, { backgroundColor: colors.danger }]}
+          style={[styles.button, { backgroundColor: currentSlide.color }]}
           onPress={handleNext}
         >
           <Text style={styles.buttonText}>
             {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
           </Text>
-          <IconSymbol
-            name="arrow.right"
-            size={20}
-            color="#ffffff"
-          />
+          <IconSymbol name="arrow.right" size={20} color="#ffffff" />
         </Pressable>
-      </View>
-    </View>
-  );
-}
 
-interface PaginationDotProps {
-  index: number;
-  scrollX: Animated.SharedValue<number>;
-}
-
-function PaginationDot({ index, scrollX }: PaginationDotProps) {
-  const dotStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * SCREEN_WIDTH,
-      index * SCREEN_WIDTH,
-      (index + 1) * SCREEN_WIDTH,
-    ];
-
-    const width = interpolate(
-      scrollX.value,
-      inputRange,
-      [8, 24, 8],
-      Extrapolate.CLAMP
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.3, 1, 0.3],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      width,
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[styles.dot, dotStyle]}
-    />
-  );
-}
-
-interface OnboardingSlideProps {
-  item: typeof onboardingData[0];
-  index: number;
-  scrollX: Animated.SharedValue<number>;
-}
-
-function OnboardingSlide({ item, index, scrollX }: OnboardingSlideProps) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 1) * SCREEN_WIDTH,
-      index * SCREEN_WIDTH,
-      (index + 1) * SCREEN_WIDTH,
-    ];
-
-    const scale = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.8, 1, 0.8],
-      Extrapolate.CLAMP
-    );
-
-    const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.5, 1, 0.5],
-      Extrapolate.CLAMP
-    );
-
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <View style={styles.slide}>
-      <Animated.View style={[styles.slideContent, animatedStyle]}>
-        <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
-          <IconSymbol name={item.icon as any} size={80} color="#ffffff" />
+        <View style={styles.securityBadge}>
+          <IconSymbol name="checkmark.shield.fill" size={20} color={colors.success} />
+          <Text style={styles.securityText}>
+            Military-grade AES-256 encryption
+          </Text>
         </View>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -228,43 +141,30 @@ function OnboardingSlide({ item, index, scrollX }: OnboardingSlideProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
-  logoHeader: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: Platform.OS === 'android' ? 60 : 70,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 48 : 60,
     paddingBottom: 20,
   },
-  headerLogo: {
-    width: 160,
-    height: 160,
-    marginBottom: 12,
-  },
-  skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'android' ? 48 : 60,
-    right: 20,
-    zIndex: 10,
-    padding: 12,
+  appName: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   skipText: {
-    color: colors.danger,
     fontSize: 16,
+    color: colors.primary,
     fontWeight: '600',
   },
-  scrollView: {
-    flex: 1,
-  },
-  slide: {
-    width: SCREEN_WIDTH,
+  content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-  },
-  slideContent: {
-    alignItems: 'center',
-    width: '100%',
   },
   iconContainer: {
     width: 160,
@@ -273,48 +173,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 40,
-    boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
-    elevation: 8,
+    boxShadow: '0px 10px 30px rgba(0, 0, 0, 0.3)',
+    elevation: 10,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
-    color: colors.primary,
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 16,
   },
   description: {
     fontSize: 16,
-    color: '#757575',
+    color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     lineHeight: 24,
   },
   footer: {
-    paddingHorizontal: 40,
-    paddingBottom: Platform.OS === 'android' ? 40 : 20,
-    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   pagination: {
     flexDirection: 'row',
+    justifyContent: 'center',
     marginBottom: 32,
-    height: 8,
-    alignItems: 'center',
   },
-  dot: {
+  paginationDot: {
+    width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
     marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    width: 24,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 18,
     borderRadius: 12,
-    width: '100%',
-    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+    marginBottom: 16,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
     elevation: 4,
   },
   buttonText: {
@@ -322,5 +222,16 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     marginRight: 8,
+  },
+  securityBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+  },
+  securityText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    marginLeft: 8,
   },
 });

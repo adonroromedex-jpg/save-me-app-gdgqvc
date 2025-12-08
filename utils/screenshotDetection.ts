@@ -1,5 +1,6 @@
 
 import { Platform, Alert } from 'react-native';
+import * as ScreenCapture from 'expo-screen-capture';
 import { logEvent } from './eventLogger';
 
 export interface ScreenshotDetectionConfig {
@@ -10,36 +11,43 @@ export interface ScreenshotDetectionConfig {
 
 let screenshotListener: any = null;
 
-// Enable screenshot detection (iOS)
-export const enableScreenshotDetection = (config: ScreenshotDetectionConfig) => {
-  if (Platform.OS === 'ios') {
-    // iOS: Use addListener for screenshot events
-    // Note: This requires expo-screen-capture or similar package
-    console.log('Screenshot detection enabled (iOS)');
-    
-    // Placeholder for actual implementation
-    // In production, use expo-screen-capture or react-native-screenshot-detector
-    screenshotListener = {
-      remove: () => console.log('Screenshot listener removed'),
-    };
-    
+// Enable screenshot prevention and detection
+export const enableScreenshotDetection = async (config: ScreenshotDetectionConfig) => {
+  try {
+    // Prevent screen capture on both iOS and Android
+    await ScreenCapture.preventScreenCaptureAsync();
+    console.log('Screen capture prevention enabled');
+
+    // Add screenshot listener for iOS (Android is blocked by preventScreenCaptureAsync)
+    if (Platform.OS === 'ios') {
+      screenshotListener = ScreenCapture.addScreenshotListener(() => {
+        handleScreenshotDetected(config);
+      });
+      console.log('Screenshot detection listener added (iOS)');
+    }
+
     return screenshotListener;
-  } else if (Platform.OS === 'android') {
-    console.log('Screenshot detection enabled (Android)');
-    // Android: Use FLAG_SECURE to prevent screenshots
-    // This is handled in the native layer
+  } catch (error) {
+    console.error('Error enabling screenshot detection:', error);
     return null;
   }
-  
-  return null;
 };
 
 // Disable screenshot detection
-export const disableScreenshotDetection = () => {
-  if (screenshotListener) {
-    screenshotListener.remove();
-    screenshotListener = null;
-    console.log('Screenshot detection disabled');
+export const disableScreenshotDetection = async () => {
+  try {
+    // Allow screen capture again
+    await ScreenCapture.allowScreenCaptureAsync();
+    console.log('Screen capture prevention disabled');
+
+    // Remove screenshot listener
+    if (screenshotListener) {
+      screenshotListener.remove();
+      screenshotListener = null;
+      console.log('Screenshot detection listener removed');
+    }
+  } catch (error) {
+    console.error('Error disabling screenshot detection:', error);
   }
 };
 
@@ -59,7 +67,7 @@ export const handleScreenshotDetected = async (config: ScreenshotDetectionConfig
   // Show alert
   Alert.alert(
     '⚠️ Screenshot Detected',
-    'This action has been logged for security purposes.',
+    'This action has been logged for security purposes. Screenshots are not allowed for secure content.',
     [{ text: 'OK' }]
   );
   
@@ -69,27 +77,43 @@ export const handleScreenshotDetected = async (config: ScreenshotDetectionConfig
   }
 };
 
-// Check if FLAG_SECURE is supported
-export const isFlagSecureSupported = (): boolean => {
-  return Platform.OS === 'android';
+// Check if screen capture prevention is supported
+export const isScreenCapturePreventionSupported = (): boolean => {
+  return Platform.OS === 'android' || Platform.OS === 'ios';
 };
 
-// Enable FLAG_SECURE (Android only)
-export const enableFlagSecure = () => {
-  if (Platform.OS === 'android') {
-    console.log('FLAG_SECURE enabled - screenshots blocked');
-    // Note: This requires native module implementation
-    // For MVP, this is a placeholder
+// Enable screen capture prevention (for secure viewer)
+export const enableFlagSecure = async (): Promise<boolean> => {
+  try {
+    await ScreenCapture.preventScreenCaptureAsync();
+    console.log('Screen capture blocked');
     return true;
+  } catch (error) {
+    console.error('Error enabling screen capture prevention:', error);
+    return false;
   }
-  return false;
 };
 
-// Disable FLAG_SECURE (Android only)
-export const disableFlagSecure = () => {
-  if (Platform.OS === 'android') {
-    console.log('FLAG_SECURE disabled');
+// Disable screen capture prevention
+export const disableFlagSecure = async (): Promise<boolean> => {
+  try {
+    await ScreenCapture.allowScreenCaptureAsync();
+    console.log('Screen capture allowed');
     return true;
+  } catch (error) {
+    console.error('Error disabling screen capture prevention:', error);
+    return false;
   }
-  return false;
+};
+
+// Check if screen capture is currently prevented
+export const isScreenCapturePrevented = async (): Promise<boolean> => {
+  try {
+    // expo-screen-capture doesn't provide a direct way to check status
+    // We'll track it manually
+    return false; // Default to false, will be managed by enable/disable calls
+  } catch (error) {
+    console.error('Error checking screen capture status:', error);
+    return false;
+  }
 };

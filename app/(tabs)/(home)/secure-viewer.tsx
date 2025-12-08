@@ -7,7 +7,7 @@ import { colors } from "@/styles/commonStyles";
 import { openShare } from "@/services/sharingService";
 import { SecureShare } from "@/types/sharing";
 import { generateWatermarkText, getWatermarkStyle, getWatermarkTextStyle } from "@/utils/watermarkUtils";
-import { enableScreenshotDetection, disableScreenshotDetection, handleScreenshotDetected, enableFlagSecure, disableFlagSecure } from "@/utils/screenshotDetection";
+import { enableScreenshotDetection, disableScreenshotDetection, handleScreenshotDetected } from "@/utils/screenshotDetection";
 import { logEvent } from "@/utils/eventLogger";
 
 const { width, height } = Dimensions.get('window');
@@ -30,40 +30,25 @@ export default function SecureViewerScreen() {
     };
   }, []);
 
-  const setupSecureMode = () => {
-    // Enable FLAG_SECURE on Android
-    if (Platform.OS === 'android') {
-      enableFlagSecure();
-    }
+  const setupSecureMode = async () => {
+    const userId = 'current_user';
+    const shareId = params.shareId as string;
+    
+    // Enable screenshot detection and prevention
+    screenshotListenerRef.current = await enableScreenshotDetection({
+      userId,
+      shareId,
+      onScreenshotDetected: () => {
+        handleScreenshotDetected({ userId, shareId });
+      },
+    });
 
-    // Enable screenshot detection on iOS
-    if (Platform.OS === 'ios') {
-      const userId = 'current_user';
-      const shareId = params.shareId as string;
-      
-      screenshotListenerRef.current = enableScreenshotDetection({
-        userId,
-        shareId,
-        onScreenshotDetected: () => {
-          handleScreenshotDetected({ userId, shareId });
-        },
-      });
-    }
-
-    console.log('Secure mode enabled');
+    console.log('Secure mode enabled with screenshot protection');
   };
 
-  const cleanupSecureMode = () => {
-    // Disable FLAG_SECURE on Android
-    if (Platform.OS === 'android') {
-      disableFlagSecure();
-    }
-
-    // Disable screenshot detection on iOS
-    if (Platform.OS === 'ios') {
-      disableScreenshotDetection();
-    }
-
+  const cleanupSecureMode = async () => {
+    // Disable screenshot detection
+    await disableScreenshotDetection();
     console.log('Secure mode disabled');
   };
 
@@ -230,9 +215,9 @@ export default function SecureViewerScreen() {
           <IconSymbol name="exclamationmark.shield.fill" color={colors.card} size={20} />
           <Text style={styles.securityNoticeText}>
             {Platform.OS === 'android' 
-              ? '🔒 Screenshots blocked • All access logged'
+              ? '🔒 Screenshots blocked • Screen recording blocked • All access logged'
               : Platform.OS === 'ios'
-              ? '⚠️ Screenshot detection active • All access logged'
+              ? '🔒 Screenshots blocked • Screen recording blocked • All access logged'
               : '⚠️ Limited protection on web • All access logged'}
           </Text>
         </View>
@@ -364,7 +349,7 @@ const styles = StyleSheet.create({
   },
   securityNoticeText: {
     color: colors.card,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     marginLeft: 8,
     textAlign: 'center',

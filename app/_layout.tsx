@@ -16,9 +16,11 @@ import {
 } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { isAppLockEnabled, authenticateUser } from "@/utils/biometricAuth";
+import { isAppLockEnabled } from "@/utils/biometricAuth";
 import { checkAndExecuteSelfDestructs } from "@/utils/selfDestructTimer";
+import * as ScreenCapture from 'expo-screen-capture';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,22 +28,39 @@ export const unstable_settings = {
   initialRouteName: "(auth)/onboarding",
 };
 
-function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolean) {
+function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolean, phoneVerified: boolean | null) {
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated === null) {
+    if (isAuthenticated === null || phoneVerified === null) {
       return;
     }
 
     const inAuthGroup = segments[0] === '(auth)';
     const isAppLockScreen = segments[segments.length - 1] === 'app-lock';
+    const isPhoneVerificationScreen = segments[segments.length - 1] === 'phone-verification';
+    const isOnboardingScreen = segments[segments.length - 1] === 'onboarding';
 
-    console.log('Protected route check:', { isAuthenticated, needsAppLock, inAuthGroup, isAppLockScreen, segments });
+    console.log('Protected route check:', { 
+      isAuthenticated, 
+      needsAppLock, 
+      phoneVerified,
+      inAuthGroup, 
+      isAppLockScreen,
+      isPhoneVerificationScreen,
+      segments 
+    });
+
+    // If not phone verified and not on phone verification screen, redirect to phone verification
+    if (!phoneVerified && !isPhoneVerificationScreen && !isOnboardingScreen) {
+      console.log('Redirecting to phone verification - phone not verified');
+      router.replace('/(auth)/phone-verification');
+      return;
+    }
 
     // If app lock is needed and not on app-lock screen, redirect to app-lock
-    if (isAuthenticated && needsAppLock && !isAppLockScreen) {
+    if (isAuthenticated && phoneVerified && needsAppLock && !isAppLockScreen) {
       console.log('Redirecting to app-lock - authentication required');
       router.replace('/(auth)/app-lock');
       return;
@@ -54,44 +73,81 @@ function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolea
       return;
     }
 
-    // If authenticated, app lock passed, and in auth group, redirect to home
-    if (isAuthenticated && !needsAppLock && inAuthGroup && !isAppLockScreen) {
+    // If authenticated, phone verified, app lock passed, and in auth group, redirect to home
+    if (isAuthenticated && phoneVerified && !needsAppLock && inAuthGroup && !isAppLockScreen && !isPhoneVerificationScreen) {
       console.log('Redirecting to home - authenticated and unlocked');
       router.replace('/(tabs)/(home)/');
     }
-  }, [isAuthenticated, needsAppLock, segments, router]);
+  }, [isAuthenticated, needsAppLock, phoneVerified, segments, router]);
 }
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const networkState = useNetworkState();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [phoneVerified, setPhoneVerified] = useState<boolean | null>(null);
   const [needsAppLock, setNeedsAppLock] = useState(false);
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  useProtectedRoute(isAuthenticated, needsAppLock);
+  useProtectedRoute(isAuthenticated, needsAppLock, phoneVerified);
+
+  // Enable global screenshot protection
+  useEffect(() => {
+    enableGlobalScreenshotProtection();
+    
+    return () => {
+      disableGlobalScreenshotProtection();
+    };
+  }, []);
+
+  const enableGlobalScreenshotProtection = async () => {
+    try {
+      await ScreenCapture.preventScreenCaptureAsync();
+      console.log('Global screenshot protection enabled');
+    } catch (error) {
+      console.error('Error enabling global screenshot protection:', error);
+    }
+  };
+
+  const disableGlobalScreenshotProtection = async () => {
+    try {
+      await ScreenCapture.allowScreenCaptureAsync();
+      console.log('Global screenshot protection disabled');
+    } catch (error) {
+      console.error('Error disabling global screenshot protection:', error);
+    }
+  };
 
   // Check authentication status and app lock
   const checkAuth = async () => {
     try {
       const authStatus = await AsyncStorage.getItem('is_authenticated');
+      const phoneVerifiedStatus = await AsyncStorage.getItem('phone_verified');
+      
       console.log('Auth status from storage:', authStatus);
+      console.log('Phone verified status from storage:', phoneVerifiedStatus);
+      
       const authenticated = authStatus === 'true';
+      const verified = phoneVerifiedStatus === 'true';
+      
       setIsAuthenticated(authenticated);
+      setPhoneVerified(verified);
 
-      // If authenticated, check if app lock is enabled
-      if (authenticated) {
+      // ALWAYS require app lock on every app open (no session caching)
+      if (authenticated && verified) {
         const lockEnabled = await isAppLockEnabled();
         console.log('App lock enabled:', lockEnabled);
-        setNeedsAppLock(lockEnabled);
+        // Always set needsAppLock to true to enforce passcode on every open
+        setNeedsAppLock(true);
       } else {
         setNeedsAppLock(false);
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
+      setPhoneVerified(false);
       setNeedsAppLock(false);
     }
   };
@@ -117,28 +173,18 @@ export default function RootLayout() {
         checkAndExecuteSelfDestructs().catch(error => {
           console.error('Error running self-destruct cleanup:', error);
         });
+
+        // Re-enable screenshot protection
+        enableGlobalScreenshotProtection();
       } else if (nextAppState === 'background') {
-        // When app goes to background, require app lock on next activation
-        isAppLockEnabled().then(enabled => {
-          if (enabled) {
-            setNeedsAppLock(true);
-          }
-        });
+        // When app goes to background, ALWAYS require app lock on next activation
+        setNeedsAppLock(true);
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, []);
-
-  // Set up a periodic check for auth changes (every 2 seconds when app is active)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      checkAuth();
-    }, 2000);
-
-    return () => clearInterval(interval);
   }, []);
 
   // Run self-destruct cleanup periodically (every 5 minutes)
@@ -153,10 +199,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (loaded && isAuthenticated !== null) {
+    if (loaded && isAuthenticated !== null && phoneVerified !== null) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, isAuthenticated]);
+  }, [loaded, isAuthenticated, phoneVerified]);
 
   React.useEffect(() => {
     if (
@@ -170,7 +216,7 @@ export default function RootLayout() {
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
 
-  if (!loaded || isAuthenticated === null) {
+  if (!loaded || isAuthenticated === null || phoneVerified === null) {
     return null;
   }
 
@@ -205,39 +251,41 @@ export default function RootLayout() {
       <ThemeProvider
         value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
       >
-        <WidgetProvider>
-          <GestureHandlerRootView>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="modal"
-                options={{
-                  presentation: "modal",
-                  title: "Standard Modal",
-                }}
-              />
-              <Stack.Screen
-                name="formsheet"
-                options={{
-                  presentation: "formSheet",
-                  title: "Form Sheet Modal",
-                  sheetGrabberVisible: true,
-                  sheetAllowedDetents: [0.5, 0.8, 1.0],
-                  sheetCornerRadius: 20,
-                }}
-              />
-              <Stack.Screen
-                name="transparent-modal"
-                options={{
-                  presentation: "transparentModal",
-                  headerShown: false,
-                }}
-              />
-            </Stack>
-            <SystemBars style={"auto"} />
-          </GestureHandlerRootView>
-        </WidgetProvider>
+        <LanguageProvider>
+          <WidgetProvider>
+            <GestureHandlerRootView>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="modal"
+                  options={{
+                    presentation: "modal",
+                    title: "Standard Modal",
+                  }}
+                />
+                <Stack.Screen
+                  name="formsheet"
+                  options={{
+                    presentation: "formSheet",
+                    title: "Form Sheet Modal",
+                    sheetGrabberVisible: true,
+                    sheetAllowedDetents: [0.5, 0.8, 1.0],
+                    sheetCornerRadius: 20,
+                  }}
+                />
+                <Stack.Screen
+                  name="transparent-modal"
+                  options={{
+                    presentation: "transparentModal",
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+              <SystemBars style={"auto"} />
+            </GestureHandlerRootView>
+          </WidgetProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </>
   );
