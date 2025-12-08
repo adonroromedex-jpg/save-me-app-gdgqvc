@@ -27,9 +27,19 @@ export default function RegisterScreen() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  React.useEffect(() => {
+    // Load email from temp storage if available
+    AsyncStorage.getItem('user_email_temp').then(tempEmail => {
+      if (tempEmail) {
+        setEmail(tempEmail);
+        AsyncStorage.removeItem('user_email_temp');
+      }
+    });
+  }, []);
+
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!name || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -65,15 +75,17 @@ export default function RegisterScreen() {
       // Store user data
       const userData = {
         name,
-        email,
+        email: email || '',
         password,
         createdAt: new Date().toISOString(),
       };
 
-      console.log('Registering user:', { name, email });
+      console.log('Registering user:', { name, email: email || 'not provided' });
 
       await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-      await AsyncStorage.setItem('user_email', email);
+      if (email) {
+        await AsyncStorage.setItem('user_email', email);
+      }
       await AsyncStorage.setItem('user_name', name);
       
       // Set authentication status LAST to trigger the navigation
@@ -81,21 +93,8 @@ export default function RegisterScreen() {
 
       console.log('User registered successfully, authentication set to true');
 
-      // Show success message and navigate
-      Alert.alert(
-        'Success',
-        'Account created successfully! Welcome to Save Me.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              console.log('Navigating to app-lock after registration');
-              // The _layout.tsx will automatically redirect to app-lock
-              router.replace('/(auth)/app-lock');
-            },
-          },
-        ]
-      );
+      // Navigate to language selection
+      router.replace('/(auth)/welcome-language');
     } catch (error) {
       console.error('Registration error:', error);
       Alert.alert('Error', 'An error occurred during registration');
@@ -149,7 +148,7 @@ export default function RegisterScreen() {
             <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="Email (optional)"
               placeholderTextColor="rgba(255, 255, 255, 0.5)"
               value={email}
               onChangeText={setEmail}
@@ -204,7 +203,7 @@ export default function RegisterScreen() {
           <Pressable
             style={[styles.button, { backgroundColor: colors.secondary }]}
             onPress={handleRegister}
-            disabled={loading || !name || !email || !password || !confirmPassword}
+            disabled={loading || !name || !password || !confirmPassword}
           >
             <Text style={styles.buttonText}>
               {loading ? 'Creating Account...' : 'Create Account'}

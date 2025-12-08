@@ -6,6 +6,7 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as LocalAuthentication from 'expo-local-authentication';
+import DrawerMenu from "@/components/DrawerMenu";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -13,6 +14,7 @@ export default function HomeScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasHardware, setHasHardware] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const checkBiometricSupport = useCallback(async () => {
     try {
@@ -115,13 +117,10 @@ export default function HomeScreen() {
 
   const renderHeaderLeft = () => (
     <Pressable
-      onPress={() => Alert.alert("Panic Button", "This will delete all sensitive content. Are you sure?", [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete All", style: "destructive", onPress: () => console.log("Panic delete triggered") }
-      ])}
+      onPress={() => setDrawerVisible(true)}
       style={styles.headerButtonContainer}
     >
-      <IconSymbol name="exclamationmark.triangle.fill" color={colors.danger} />
+      <IconSymbol name="line.3.horizontal" color={colors.primary} />
     </Pressable>
   );
 
@@ -181,7 +180,25 @@ export default function HomeScreen() {
           }}
         />
       )}
+      <DrawerMenu visible={drawerVisible} onClose={() => setDrawerVisible(false)} />
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {Platform.OS === 'android' && (
+          <View style={styles.androidHeader}>
+            <Pressable
+              onPress={() => setDrawerVisible(true)}
+              style={styles.androidMenuButton}
+            >
+              <IconSymbol name="line.3.horizontal" color={colors.primary} size={24} />
+            </Pressable>
+            <Text style={styles.androidHeaderTitle}>Save Me</Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/(settings)/')}
+              style={styles.androidMenuButton}
+            >
+              <IconSymbol name="gear" color={colors.primary} size={24} />
+            </Pressable>
+          </View>
+        )}
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
@@ -269,10 +286,29 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
-    paddingTop: Platform.OS === 'android' ? 48 : 0,
+    paddingTop: 0,
   },
   headerButtonContainer: {
     padding: 8,
+  },
+  androidHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 12,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  androidMenuButton: {
+    padding: 8,
+  },
+  androidHeaderTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.text,
   },
   lockIconContainer: {
     width: 120,

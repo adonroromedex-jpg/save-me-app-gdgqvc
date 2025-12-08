@@ -25,13 +25,30 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PhoneVerificationScreen() {
   const router = useRouter();
-  const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const [step, setStep] = useState<'phone' | 'code' | 'email'>('phone');
   const [countryCode, setCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [generatedCode, setGeneratedCode] = useState<string>('');
+  const [showCountryPicker, setShowCountryPicker] = useState(false);
+
+  const countryCodes = [
+    { code: '+1', country: 'US/Canada', flag: '🇺🇸' },
+    { code: '+44', country: 'UK', flag: '🇬🇧' },
+    { code: '+33', country: 'France', flag: '🇫🇷' },
+    { code: '+49', country: 'Germany', flag: '🇩🇪' },
+    { code: '+34', country: 'Spain', flag: '🇪🇸' },
+    { code: '+39', country: 'Italy', flag: '🇮🇹' },
+    { code: '+509', country: 'Haiti', flag: '🇭🇹' },
+    { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+    { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+    { code: '+86', country: 'China', flag: '🇨🇳' },
+    { code: '+91', country: 'India', flag: '🇮🇳' },
+    { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  ];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -44,7 +61,7 @@ export default function PhoneVerificationScreen() {
   }, [resendTimer]);
 
   const handleSendCode = async () => {
-    if (!phoneNumber || phoneNumber.length < 10) {
+    if (!phoneNumber || phoneNumber.length < 7) {
       Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
       return;
     }
@@ -59,7 +76,7 @@ export default function PhoneVerificationScreen() {
       setResendTimer(60);
       Alert.alert(
         'Code Sent',
-        `A verification code has been sent to ${countryCode}${phoneNumber}\n\nFor testing: ${result.code}`,
+        `A verification code has been sent to ${countryCode} ${phoneNumber}\n\nFor testing: ${result.code}`,
         [{ text: 'OK' }]
       );
     } else {
@@ -74,34 +91,33 @@ export default function PhoneVerificationScreen() {
     }
 
     setLoading(true);
-    const result = await verifyPhoneNumber(phoneNumber, verificationCode);
+    const result = await verifyPhoneNumber(phoneNumber, verificationCode, countryCode);
     setLoading(false);
 
     if (result.success) {
-      await setCurrentUserPhone(phoneNumber);
+      await setCurrentUserPhone(phoneNumber, countryCode);
       await AsyncStorage.setItem('phone_verified', 'true');
       
-      Alert.alert(
-        'Success',
-        'Phone number verified successfully!',
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              // Check if user is already registered
-              AsyncStorage.getItem('is_authenticated').then(auth => {
-                if (auth === 'true') {
-                  router.replace('/(tabs)/(home)/');
-                } else {
-                  router.replace('/(auth)/register');
-                }
-              });
-            },
-          },
-        ]
-      );
+      // Move to email step (optional)
+      setStep('email');
     } else {
       Alert.alert('Error', result.error || 'Verification failed');
+    }
+  };
+
+  const handleEmailSubmit = async () => {
+    // Email is optional, so we can skip it
+    // Check if user is already registered
+    const auth = await AsyncStorage.getItem('is_authenticated');
+    if (auth === 'true') {
+      // User already registered, go to language selection
+      router.replace('/(auth)/welcome-language');
+    } else {
+      // New user, save email if provided and go to registration
+      if (email) {
+        await AsyncStorage.setItem('user_email_temp', email);
+      }
+      router.replace('/(auth)/register');
     }
   };
 
@@ -126,6 +142,78 @@ export default function PhoneVerificationScreen() {
       Alert.alert('Error', result.error || 'Failed to resend code');
     }
   };
+
+  if (step === 'email') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <LinearGradient
+          colors={['#1a1a2e', '#16213e', '#0f3460']}
+          style={StyleSheet.absoluteFillObject}
+        />
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <View style={[styles.logoContainer, { backgroundColor: colors.accent }]}>
+              <IconSymbol name="envelope.fill" size={60} color="#ffffff" />
+            </View>
+            <Text style={styles.title}>Email Address (Optional)</Text>
+            <Text style={styles.subtitle}>
+              Add your email for account recovery and notifications
+            </Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <IconSymbol name="envelope.fill" size={20} color={colors.textSecondary} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email (optional)"
+                placeholderTextColor="rgba(255, 255, 255, 0.5)"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <Pressable
+              style={[styles.button, { backgroundColor: colors.accent }]}
+              onPress={handleEmailSubmit}
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.skipButton}
+              onPress={handleEmailSubmit}
+            >
+              <Text style={styles.skipText}>Skip for now</Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.infoCard, { backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}>
+            <IconSymbol name="info.circle.fill" size={24} color={colors.accent} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoTitle}>Why add an email?</Text>
+              <Text style={styles.infoText}>
+                • Account recovery if you forget your PIN{'\n'}
+                • Important security notifications{'\n'}
+                • Optional - you can skip this step
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (step === 'code') {
     return (
@@ -246,17 +334,13 @@ export default function PhoneVerificationScreen() {
 
         <View style={styles.form}>
           <View style={styles.phoneInputRow}>
-            <View style={[styles.countryCodeContainer, styles.inputContainer]}>
-              <TextInput
-                style={[styles.input, styles.countryCodeInput]}
-                placeholder="+1"
-                placeholderTextColor="rgba(255, 255, 255, 0.5)"
-                value={countryCode}
-                onChangeText={setCountryCode}
-                keyboardType="phone-pad"
-                maxLength={4}
-              />
-            </View>
+            <Pressable
+              style={[styles.countryCodeContainer, styles.inputContainer]}
+              onPress={() => setShowCountryPicker(!showCountryPicker)}
+            >
+              <Text style={styles.countryCodeText}>{countryCode}</Text>
+              <IconSymbol name="chevron.down" size={16} color="rgba(255, 255, 255, 0.7)" />
+            </Pressable>
 
             <View style={[styles.phoneNumberContainer, styles.inputContainer]}>
               <IconSymbol name="phone.fill" size={20} color={colors.textSecondary} />
@@ -271,6 +355,30 @@ export default function PhoneVerificationScreen() {
               />
             </View>
           </View>
+
+          {showCountryPicker && (
+            <View style={styles.countryPickerContainer}>
+              <ScrollView style={styles.countryPicker} nestedScrollEnabled>
+                {countryCodes.map((country) => (
+                  <Pressable
+                    key={country.code}
+                    style={[
+                      styles.countryOption,
+                      countryCode === country.code && styles.countryOptionSelected
+                    ]}
+                    onPress={() => {
+                      setCountryCode(country.code);
+                      setShowCountryPicker(false);
+                    }}
+                  >
+                    <Text style={styles.countryFlag}>{country.flag}</Text>
+                    <Text style={styles.countryName}>{country.country}</Text>
+                    <Text style={styles.countryCodeOption}>{country.code}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           <Pressable
             style={[styles.button, { backgroundColor: colors.primary }]}
@@ -360,7 +468,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   countryCodeContainer: {
-    width: 80,
+    width: 90,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  countryCodeText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '600',
+    marginRight: 4,
   },
   phoneNumberContainer: {
     flex: 1,
@@ -453,5 +570,50 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  skipButton: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  skipText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  countryPickerContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    marginBottom: 16,
+    maxHeight: 200,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  countryPicker: {
+    maxHeight: 200,
+  },
+  countryOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  countryOptionSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  countryFlag: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  countryName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ffffff',
+  },
+  countryCodeOption: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
   },
 });

@@ -41,6 +41,9 @@ function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolea
     const isAppLockScreen = segments[segments.length - 1] === 'app-lock';
     const isPhoneVerificationScreen = segments[segments.length - 1] === 'phone-verification';
     const isOnboardingScreen = segments[segments.length - 1] === 'onboarding';
+    const isWelcomeLanguageScreen = segments[segments.length - 1] === 'welcome-language';
+    const isSetupPinScreen = segments[segments.length - 1] === 'setup-pin';
+    const isRegisterScreen = segments[segments.length - 1] === 'register';
 
     console.log('Protected route check:', { 
       isAuthenticated, 
@@ -52,15 +55,15 @@ function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolea
       segments 
     });
 
-    // If not phone verified and not on phone verification screen, redirect to phone verification
+    // If not phone verified and not on phone verification or onboarding screen, redirect to phone verification
     if (!phoneVerified && !isPhoneVerificationScreen && !isOnboardingScreen) {
       console.log('Redirecting to phone verification - phone not verified');
       router.replace('/(auth)/phone-verification');
       return;
     }
 
-    // If app lock is needed and not on app-lock screen, redirect to app-lock
-    if (isAuthenticated && phoneVerified && needsAppLock && !isAppLockScreen) {
+    // If app lock is needed and not on app-lock or setup screens, redirect to app-lock
+    if (isAuthenticated && phoneVerified && needsAppLock && !isAppLockScreen && !isSetupPinScreen && !isWelcomeLanguageScreen) {
       console.log('Redirecting to app-lock - authentication required');
       router.replace('/(auth)/app-lock');
       return;
@@ -73,8 +76,8 @@ function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolea
       return;
     }
 
-    // If authenticated, phone verified, app lock passed, and in auth group, redirect to home
-    if (isAuthenticated && phoneVerified && !needsAppLock && inAuthGroup && !isAppLockScreen && !isPhoneVerificationScreen) {
+    // If authenticated, phone verified, app lock passed, and in auth group (but not on setup screens), redirect to home
+    if (isAuthenticated && phoneVerified && !needsAppLock && inAuthGroup && !isAppLockScreen && !isPhoneVerificationScreen && !isWelcomeLanguageScreen && !isSetupPinScreen && !isRegisterScreen) {
       console.log('Redirecting to home - authenticated and unlocked');
       router.replace('/(tabs)/(home)/');
     }

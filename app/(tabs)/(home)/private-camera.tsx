@@ -111,9 +111,15 @@ export default function PrivateCameraScreen() {
     if (cameraRef.current && !isRecording) {
       try {
         setIsRecording(true);
-        const video = await cameraRef.current.recordAsync();
+        console.log('Starting video recording...');
         
-        if (video) {
+        const video = await cameraRef.current.recordAsync({
+          maxDuration: 60, // 60 seconds max
+        });
+        
+        console.log('Video recorded:', video);
+        
+        if (video && video.uri) {
           // Save to secure storage
           const storedFiles = await SecureStore.getItemAsync('secure_files');
           const files: SecureFile[] = storedFiles ? JSON.parse(storedFiles) : [];
@@ -129,7 +135,10 @@ export default function PrivateCameraScreen() {
           files.push(newFile);
           await SecureStore.setItemAsync('secure_files', JSON.stringify(files));
           
-          Alert.alert('Success', 'Video saved to secure drive');
+          Alert.alert('Success', 'Video saved to secure drive', [
+            { text: 'Record Another', style: 'default' },
+            { text: 'View Drive', onPress: () => router.push('/(tabs)/(home)/secure-drive') }
+          ]);
           console.log('Video saved to secure drive:', newFile.id);
         }
       } catch (error) {
@@ -141,10 +150,14 @@ export default function PrivateCameraScreen() {
     }
   };
 
-  const stopRecording = () => {
+  const stopRecording = async () => {
     if (cameraRef.current && isRecording) {
-      cameraRef.current.stopRecording();
-      setIsRecording(false);
+      try {
+        console.log('Stopping video recording...');
+        await cameraRef.current.stopRecording();
+      } catch (error) {
+        console.error('Error stopping recording:', error);
+      }
     }
   };
 

@@ -18,11 +18,25 @@ export default function AppLockScreen() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [authMethodName, setAuthMethodName] = useState('Biometric Authentication');
   const [loading, setLoading] = useState(false);
+  const [pinSetupComplete, setPinSetupComplete] = useState(false);
 
   useEffect(() => {
+    checkPinSetup();
     checkBiometricAvailability();
-    attemptBiometricAuth();
   }, []);
+
+  const checkPinSetup = async () => {
+    const setupComplete = await AsyncStorage.getItem('pin_setup_complete');
+    setPinSetupComplete(setupComplete === 'true');
+    
+    if (setupComplete !== 'true') {
+      // Redirect to PIN setup
+      router.replace('/(auth)/setup-pin');
+    } else {
+      // Try biometric auth
+      attemptBiometricAuth();
+    }
+  };
 
   const checkBiometricAvailability = async () => {
     const available = await isBiometricAvailable();

@@ -112,7 +112,7 @@ export const disableAppLock = async (): Promise<void> => {
 };
 
 // Set PIN for app access
-export const setAppPIN = async (pin: string): Promise<void> => {
+export const setAppPIN = async (pin: string): Promise<boolean> => {
   try {
     // Hash the PIN before storing
     const crypto = require('expo-crypto');
@@ -123,9 +123,10 @@ export const setAppPIN = async (pin: string): Promise<void> => {
     await SecureStore.setItemAsync('app_pin', hashedPIN);
     await enableAppLock();
     console.log('App PIN set successfully');
+    return true;
   } catch (error) {
     console.error('Error setting app PIN:', error);
-    throw error;
+    return false;
   }
 };
 
