@@ -6,7 +6,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { SystemBars } from "react-native-edge-to-edge";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { useColorScheme, Alert } from "react-native";
+import { useColorScheme, Alert, AppState } from "react-native";
 import { useNetworkState } from "expo-network";
 import {
   DarkTheme,
@@ -35,9 +35,13 @@ function useProtectedRoute(isAuthenticated: boolean | null) {
 
     const inAuthGroup = segments[0] === '(auth)';
 
+    console.log('Protected route check:', { isAuthenticated, inAuthGroup, segments });
+
     if (!isAuthenticated && !inAuthGroup) {
+      console.log('Redirecting to onboarding - not authenticated');
       router.replace('/(auth)/onboarding');
     } else if (isAuthenticated && inAuthGroup) {
+      console.log('Redirecting to home - authenticated');
       router.replace('/(tabs)/(home)/');
     }
   }, [isAuthenticated, segments, router]);
@@ -53,18 +57,44 @@ export default function RootLayout() {
 
   useProtectedRoute(isAuthenticated);
 
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const authStatus = await AsyncStorage.getItem('is_authenticated');
-        setIsAuthenticated(authStatus === 'true');
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-        setIsAuthenticated(false);
-      }
+  // Check authentication status
+  const checkAuth = async () => {
+    try {
+      const authStatus = await AsyncStorage.getItem('is_authenticated');
+      console.log('Auth status from storage:', authStatus);
+      setIsAuthenticated(authStatus === 'true');
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+      setIsAuthenticated(false);
     }
+  };
 
+  // Initial auth check
+  useEffect(() => {
     checkAuth();
+  }, []);
+
+  // Listen for app state changes to re-check auth
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        console.log('App became active, rechecking auth');
+        checkAuth();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
+  // Set up a periodic check for auth changes (every 2 seconds when app is active)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAuth();
+    }, 2000);
+
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {

@@ -54,18 +54,29 @@ export default function RegisterScreen() {
         createdAt: new Date().toISOString(),
       };
 
+      console.log('Registering user:', { name, email });
+
       await AsyncStorage.setItem('user_data', JSON.stringify(userData));
-      await AsyncStorage.setItem('is_authenticated', 'true');
       await AsyncStorage.setItem('user_email', email);
       await AsyncStorage.setItem('user_name', name);
+      
+      // Set authentication status LAST to trigger the navigation
+      await AsyncStorage.setItem('is_authenticated', 'true');
 
+      console.log('User registered successfully, authentication set to true');
+
+      // Show success message and navigate
       Alert.alert(
         'Success',
-        'Account created successfully!',
+        'Account created successfully! Welcome to Save Me.',
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/(tabs)/(home)/'),
+            onPress: () => {
+              console.log('Navigating to home after registration');
+              // The _layout.tsx will automatically redirect to home
+              // because is_authenticated is now true
+            },
           },
         ]
       );
