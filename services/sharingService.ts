@@ -15,6 +15,8 @@
  * - Dynamic watermarking (userID + timestamp)
  * - Comprehensive event logging for audit
  * - Wrapped key storage (never store decryption keys in plain text)
+ * - Self-destruct timer (automatic deletion after expiration)
+ * - Device-bound access (keys bound to specific device)
  * 
  * Security Architecture:
  * 1. Sender generates Content Encryption Key (CEK) locally
@@ -23,15 +25,18 @@
  * 4. Only wrapped key is stored on server/device
  * 5. Receiver must provide OTP to unwrap and decrypt
  * 6. Sender can revoke access anytime by invalidating wrapped key
+ * 7. Content auto-deletes after expiration (self-destruct)
+ * 8. Keys are bound to device using Keystore/Secure Enclave
  * 
  * API Endpoints (for future server implementation):
  * - POST /share/create - Create new secure share
  * - POST /share/open - Open and decrypt share with OTP
  * - POST /share/revoke - Revoke access to share
+ * - POST /share/selfdestruct - Trigger immediate self-destruct
  * 
  * Platform-Specific Features:
- * - Android: FLAG_SECURE to prevent screenshots
- * - iOS: Screenshot detection with notifications + watermark
+ * - Android: FLAG_SECURE to prevent screenshots + Keystore binding
+ * - iOS: Screenshot detection with notifications + watermark + Secure Enclave binding
  * - Web: Blur/overlay + watermark (graceful degradation)
  * 
  * MVP Implementation Status:
@@ -43,6 +48,8 @@
  * ✅ Watermarking
  * ✅ Screenshot detection (iOS)
  * ✅ FLAG_SECURE (Android)
+ * ✅ Self-destruct timer
+ * ✅ Device-bound keys
  * ⏳ QR code scanning (placeholder)
  * ⏳ Server-side API (local storage for MVP)
  * ⏳ Full X25519 key exchange (simplified for MVP)
@@ -52,6 +59,8 @@ import * as SecureStore from 'expo-secure-store';
 import { SecureShare, ShareCreateRequest, ShareOpenRequest, ShareRevokeRequest, ShareAccess } from '../types/sharing';
 import { generateCEK, generateKeyPair, encryptData, wrapKey, generateOTP, hashOTP, generateQRData } from '../utils/cryptoUtils';
 import { logEvent } from '../utils/eventLogger';
+import { scheduleSelfDestruct, checkAndExecuteSelfDestructs } from '../utils/selfDestructTimer';
+import { storeDeviceBoundShareKey, retrieveDeviceBoundShareKey } from '../utils/deviceBinding';
 
 const SHARES_KEY = 'secure_shares';
 const SHARE_ACCESS_KEY = 'share_access';
@@ -134,8 +143,12 @@ export const createShare = async (request: ShareCreateRequest, userId: string): 
     shares.push(share);
     await SecureStore.setItemAsync(SHARES_KEY, JSON.stringify(shares));
     
-    // Store private key securely
-    await SecureStore.setItemAsync(`share_key_${shareId}`, privateKey);
+    // Store private key securely with device binding
+    await storeDeviceBoundShareKey(shareId, privateKey);
+    
+    // Schedule self-destruct
+    const hoursUntilExpiration = (expiresAt - now) / (60 * 60 * 1000);
+    await scheduleSelfDestruct(shareId, hoursUntilExpiration, 'expiration');
     
     // Log event
     await logEvent({
@@ -147,6 +160,7 @@ export const createShare = async (request: ShareCreateRequest, userId: string): 
       metadata: {
         duration: request.duration,
         requireOTP: request.requireOTP,
+        expiresAt,
       },
     });
     
@@ -166,6 +180,9 @@ export const createShare = async (request: ShareCreateRequest, userId: string): 
 // Open a secure share
 export const openShare = async (request: ShareOpenRequest): Promise<SecureShare | null> => {
   try {
+    // Check and execute pending self-destructs first
+    await checkAndExecuteSelfDestructs();
+    
     // Get all shares
     const sharesJson = await SecureStore.getItemAsync(SHARES_KEY);
     if (!sharesJson) {
@@ -216,6 +233,19 @@ export const openShare = async (request: ShareOpenRequest): Promise<SecureShare 
         details: 'Access denied: Maximum access limit reached',
       });
       throw new Error('Maximum access limit reached');
+    }
+    
+    // Verify device binding
+    const deviceBoundKey = await retrieveDeviceBoundShareKey(request.shareId);
+    if (!deviceBoundKey) {
+      await logEvent({
+        type: 'access.denied',
+        userId: request.userId,
+        shareId: request.shareId,
+        timestamp: Date.now(),
+        details: 'Access denied: Device binding verification failed',
+      });
+      throw new Error('This share can only be accessed on the device where it was created');
     }
     
     // Verify OTP if required
@@ -302,8 +332,12 @@ export const revokeShare = async (request: ShareRevokeRequest): Promise<void> =>
     share.status = 'revoked';
     await SecureStore.setItemAsync(SHARES_KEY, JSON.stringify(shares));
     
-    // Delete private key
+    // Delete device-bound private key
     await SecureStore.deleteItemAsync(`share_key_${request.shareId}`);
+    
+    // Cancel self-destruct schedule
+    const { cancelSelfDestruct } = require('../utils/selfDestructTimer');
+    await cancelSelfDestruct(request.shareId);
     
     // Log event
     await logEvent({
@@ -324,6 +358,9 @@ export const revokeShare = async (request: ShareRevokeRequest): Promise<void> =>
 // Get all shares created by user
 export const getUserShares = async (userId: string): Promise<SecureShare[]> => {
   try {
+    // Check and execute pending self-destructs first
+    await checkAndExecuteSelfDestructs();
+    
     const sharesJson = await SecureStore.getItemAsync(SHARES_KEY);
     if (!sharesJson) {
       return [];
@@ -372,6 +409,9 @@ export const getShareAccessLogs = async (shareId: string): Promise<ShareAccess[]
 // Clean up expired shares
 export const cleanupExpiredShares = async (): Promise<number> => {
   try {
+    // Execute pending self-destructs
+    await checkAndExecuteSelfDestructs();
+    
     const sharesJson = await SecureStore.getItemAsync(SHARES_KEY);
     if (!sharesJson) {
       return 0;

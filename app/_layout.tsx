@@ -17,6 +17,8 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { WidgetProvider } from "@/contexts/WidgetContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { isAppLockEnabled, authenticateUser } from "@/utils/biometricAuth";
+import { checkAndExecuteSelfDestructs } from "@/utils/selfDestructTimer";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -24,7 +26,7 @@ export const unstable_settings = {
   initialRouteName: "(auth)/onboarding",
 };
 
-function useProtectedRoute(isAuthenticated: boolean | null) {
+function useProtectedRoute(isAuthenticated: boolean | null, needsAppLock: boolean) {
   const segments = useSegments();
   const router = useRouter();
 
@@ -34,52 +36,94 @@ function useProtectedRoute(isAuthenticated: boolean | null) {
     }
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isAppLockScreen = segments[segments.length - 1] === 'app-lock';
 
-    console.log('Protected route check:', { isAuthenticated, inAuthGroup, segments });
+    console.log('Protected route check:', { isAuthenticated, needsAppLock, inAuthGroup, isAppLockScreen, segments });
 
+    // If app lock is needed and not on app-lock screen, redirect to app-lock
+    if (isAuthenticated && needsAppLock && !isAppLockScreen) {
+      console.log('Redirecting to app-lock - authentication required');
+      router.replace('/(auth)/app-lock');
+      return;
+    }
+
+    // If not authenticated and not in auth group, redirect to onboarding
     if (!isAuthenticated && !inAuthGroup) {
       console.log('Redirecting to onboarding - not authenticated');
       router.replace('/(auth)/onboarding');
-    } else if (isAuthenticated && inAuthGroup) {
-      console.log('Redirecting to home - authenticated');
+      return;
+    }
+
+    // If authenticated, app lock passed, and in auth group, redirect to home
+    if (isAuthenticated && !needsAppLock && inAuthGroup && !isAppLockScreen) {
+      console.log('Redirecting to home - authenticated and unlocked');
       router.replace('/(tabs)/(home)/');
     }
-  }, [isAuthenticated, segments, router]);
+  }, [isAuthenticated, needsAppLock, segments, router]);
 }
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const networkState = useNetworkState();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [needsAppLock, setNeedsAppLock] = useState(false);
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
 
-  useProtectedRoute(isAuthenticated);
+  useProtectedRoute(isAuthenticated, needsAppLock);
 
-  // Check authentication status
+  // Check authentication status and app lock
   const checkAuth = async () => {
     try {
       const authStatus = await AsyncStorage.getItem('is_authenticated');
       console.log('Auth status from storage:', authStatus);
-      setIsAuthenticated(authStatus === 'true');
+      const authenticated = authStatus === 'true';
+      setIsAuthenticated(authenticated);
+
+      // If authenticated, check if app lock is enabled
+      if (authenticated) {
+        const lockEnabled = await isAppLockEnabled();
+        console.log('App lock enabled:', lockEnabled);
+        setNeedsAppLock(lockEnabled);
+      } else {
+        setNeedsAppLock(false);
+      }
     } catch (error) {
       console.error('Error checking auth status:', error);
       setIsAuthenticated(false);
+      setNeedsAppLock(false);
     }
   };
 
   // Initial auth check
   useEffect(() => {
     checkAuth();
+    
+    // Run self-destruct cleanup on app start
+    checkAndExecuteSelfDestructs().catch(error => {
+      console.error('Error running self-destruct cleanup:', error);
+    });
   }, []);
 
-  // Listen for app state changes to re-check auth
+  // Listen for app state changes to re-check auth and run cleanup
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
-        console.log('App became active, rechecking auth');
+        console.log('App became active, rechecking auth and running cleanup');
         checkAuth();
+        
+        // Run self-destruct cleanup when app becomes active
+        checkAndExecuteSelfDestructs().catch(error => {
+          console.error('Error running self-destruct cleanup:', error);
+        });
+      } else if (nextAppState === 'background') {
+        // When app goes to background, require app lock on next activation
+        isAppLockEnabled().then(enabled => {
+          if (enabled) {
+            setNeedsAppLock(true);
+          }
+        });
       }
     });
 
@@ -93,6 +137,17 @@ export default function RootLayout() {
     const interval = setInterval(() => {
       checkAuth();
     }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Run self-destruct cleanup periodically (every 5 minutes)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAndExecuteSelfDestructs().catch(error => {
+        console.error('Error running periodic self-destruct cleanup:', error);
+      });
+    }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
   }, []);
