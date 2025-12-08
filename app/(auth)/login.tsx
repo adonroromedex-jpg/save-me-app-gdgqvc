@@ -39,9 +39,20 @@ export default function LoginScreen() {
         const userData = JSON.parse(storedUser);
         
         if (userData.email === email && userData.password === password) {
-          await AsyncStorage.setItem('is_authenticated', 'true');
-          await AsyncStorage.setItem('user_email', email);
-          router.replace('/(tabs)/(home)/');
+          // Check if 2FA is enabled
+          const twoFactorEnabled = await AsyncStorage.getItem('2fa_enabled');
+          
+          if (twoFactorEnabled === 'true') {
+            // Store email temporarily for 2FA verification
+            await AsyncStorage.setItem('temp_login_email', email);
+            // Navigate to 2FA verification
+            router.push('/(auth)/verify-2fa');
+          } else {
+            // No 2FA, proceed with login
+            await AsyncStorage.setItem('is_authenticated', 'true');
+            await AsyncStorage.setItem('user_email', email);
+            router.replace('/(tabs)/(home)/');
+          }
         } else {
           Alert.alert('Error', 'Invalid email or password');
         }

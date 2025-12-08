@@ -144,10 +144,16 @@ export default function SettingsScreen() {
 
   const menuItems = [
     {
+      icon: 'lock.shield.fill',
+      label: 'Two-Factor Authentication',
+      route: '/(tabs)/(settings)/two-factor-auth',
+      color: colors.primary,
+    },
+    {
       icon: 'globe',
       label: 'Language',
       route: '/(tabs)/(settings)/language',
-      color: colors.primary,
+      color: colors.accent,
     },
     {
       icon: 'paintbrush.fill',
@@ -159,7 +165,7 @@ export default function SettingsScreen() {
       icon: 'arrow.down.doc.fill',
       label: 'Export Data',
       route: '/(tabs)/(settings)/export-data',
-      color: colors.accent,
+      color: colors.success,
     },
     {
       icon: 'questionmark.circle.fill',
