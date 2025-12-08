@@ -1,224 +1,181 @@
 
-import * as SecureStore from 'expo-secure-store';
-import * as Crypto from 'expo-crypto';
-import { logEvent } from './eventLogger';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export interface PhoneAuthData {
-  phoneNumber: string;
-  countryCode: string;
-  verified: boolean;
-  verificationCode?: string;
-  verificationExpiry?: number;
-  createdAt: number;
+interface VerificationResult {
+  success: boolean;
+  code?: string;
+  error?: string;
 }
 
-const PHONE_AUTH_KEY = 'phone_auth_data';
-const VERIFIED_USERS_KEY = 'verified_phone_users';
+/**
+ * Generate a random 6-digit verification code
+ */
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-// Generate 6-digit verification code
-export const generateVerificationCode = (): string => {
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  return code;
-};
-
-// Send verification code (simulated for MVP - in production, use SMS service)
-export const sendVerificationCode = async (
+/**
+ * Send a verification code to the provided phone number
+ * In production, this would integrate with an SMS service like Twilio
+ * For now, it generates a code and returns it for testing
+ */
+export async function sendVerificationCode(
   phoneNumber: string,
-  countryCode: string
-): Promise<{ success: boolean; code?: string; error?: string }> => {
+  countryCode: string = '+1'
+): Promise<VerificationResult> {
   try {
-    const code = generateVerificationCode();
-    const expiry = Date.now() + (10 * 60 * 1000); // 10 minutes
-
-    const authData: PhoneAuthData = {
-      phoneNumber,
-      countryCode,
-      verified: false,
-      verificationCode: await hashCode(code),
-      verificationExpiry: expiry,
-      createdAt: Date.now(),
-    };
-
-    await SecureStore.setItemAsync(
-      `${PHONE_AUTH_KEY}_${phoneNumber}`,
-      JSON.stringify(authData)
-    );
-
-    await logEvent({
-      type: 'share.create',
-      userId: phoneNumber,
-      timestamp: Date.now(),
-      details: 'Verification code sent',
-    });
-
-    console.log(`Verification code sent to ${countryCode}${phoneNumber}: ${code}`);
+    console.log(`Sending verification code to ${countryCode}${phoneNumber}`);
     
-    // In production, integrate with SMS service (Twilio, AWS SNS, etc.)
-    // For MVP, return the code for testing
-    return { success: true, code };
+    // Generate a 6-digit code
+    const code = generateVerificationCode();
+    
+    // Store the code temporarily for verification
+    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    await AsyncStorage.setItem(`verification_code_${fullPhoneNumber}`, code);
+    await AsyncStorage.setItem(`verification_code_timestamp_${fullPhoneNumber}`, Date.now().toString());
+    
+    // In production, you would send the code via SMS here
+    // For testing, we return the code in the response
+    console.log(`Generated verification code: ${code}`);
+    
+    return {
+      success: true,
+      code, // Remove this in production
+    };
   } catch (error) {
     console.error('Error sending verification code:', error);
-    return { success: false, error: 'Failed to send verification code' };
+    return {
+      success: false,
+      error: 'Failed to send verification code. Please try again.',
+    };
   }
-};
+}
 
-// Hash verification code
-const hashCode = async (code: string): Promise<string> => {
-  return await Crypto.digestStringAsync(
-    Crypto.CryptoDigestAlgorithm.SHA256,
-    code
-  );
-};
-
-// Verify phone number with code
-export const verifyPhoneNumber = async (
+/**
+ * Resend a verification code to the provided phone number
+ */
+export async function resendVerificationCode(
   phoneNumber: string,
-  code: string
-): Promise<{ success: boolean; error?: string }> => {
+  countryCode: string = '+1'
+): Promise<VerificationResult> {
+  return sendVerificationCode(phoneNumber, countryCode);
+}
+
+/**
+ * Verify the phone number with the provided code
+ */
+export async function verifyPhoneNumber(
+  phoneNumber: string,
+  code: string,
+  countryCode: string = '+1'
+): Promise<VerificationResult> {
   try {
-    const authDataJson = await SecureStore.getItemAsync(
-      `${PHONE_AUTH_KEY}_${phoneNumber}`
-    );
-
-    if (!authDataJson) {
-      return { success: false, error: 'No verification request found' };
+    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    
+    // Retrieve the stored code
+    const storedCode = await AsyncStorage.getItem(`verification_code_${fullPhoneNumber}`);
+    const timestamp = await AsyncStorage.getItem(`verification_code_timestamp_${fullPhoneNumber}`);
+    
+    if (!storedCode || !timestamp) {
+      return {
+        success: false,
+        error: 'No verification code found. Please request a new code.',
+      };
     }
-
-    const authData: PhoneAuthData = JSON.parse(authDataJson);
-
-    // Check if code has expired
-    if (authData.verificationExpiry && Date.now() > authData.verificationExpiry) {
-      return { success: false, error: 'Verification code has expired' };
+    
+    // Check if code has expired (10 minutes)
+    const codeAge = Date.now() - parseInt(timestamp);
+    const TEN_MINUTES = 10 * 60 * 1000;
+    
+    if (codeAge > TEN_MINUTES) {
+      // Clean up expired code
+      await AsyncStorage.removeItem(`verification_code_${fullPhoneNumber}`);
+      await AsyncStorage.removeItem(`verification_code_timestamp_${fullPhoneNumber}`);
+      
+      return {
+        success: false,
+        error: 'Verification code has expired. Please request a new code.',
+      };
     }
-
-    // Verify code
-    const hashedInput = await hashCode(code);
-    if (hashedInput !== authData.verificationCode) {
-      await logEvent({
-        type: 'access.denied',
-        userId: phoneNumber,
-        timestamp: Date.now(),
-        details: 'Invalid verification code',
-      });
-      return { success: false, error: 'Invalid verification code' };
+    
+    // Verify the code
+    if (code === storedCode) {
+      // Clean up the verification code
+      await AsyncStorage.removeItem(`verification_code_${fullPhoneNumber}`);
+      await AsyncStorage.removeItem(`verification_code_timestamp_${fullPhoneNumber}`);
+      
+      // Mark phone as verified
+      await AsyncStorage.setItem('phone_verified', 'true');
+      await AsyncStorage.setItem('user_phone_number', fullPhoneNumber);
+      
+      console.log('Phone number verified successfully');
+      
+      return {
+        success: true,
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Invalid verification code. Please try again.',
+      };
     }
-
-    // Mark as verified
-    authData.verified = true;
-    authData.verificationCode = undefined;
-    authData.verificationExpiry = undefined;
-
-    await SecureStore.setItemAsync(
-      `${PHONE_AUTH_KEY}_${phoneNumber}`,
-      JSON.stringify(authData)
-    );
-
-    // Add to verified users list
-    await addVerifiedUser(phoneNumber, authData.countryCode);
-
-    await logEvent({
-      type: 'share.open',
-      userId: phoneNumber,
-      timestamp: Date.now(),
-      details: 'Phone number verified successfully',
-    });
-
-    console.log(`Phone number verified: ${phoneNumber}`);
-    return { success: true };
   } catch (error) {
     console.error('Error verifying phone number:', error);
-    return { success: false, error: 'Verification failed' };
+    return {
+      success: false,
+      error: 'Verification failed. Please try again.',
+    };
   }
-};
+}
 
-// Add verified user to the list
-const addVerifiedUser = async (phoneNumber: string, countryCode: string): Promise<void> => {
+/**
+ * Set the current user's phone number
+ */
+export async function setCurrentUserPhone(phoneNumber: string, countryCode: string = '+1'): Promise<void> {
   try {
-    const usersJson = await SecureStore.getItemAsync(VERIFIED_USERS_KEY);
-    const users: PhoneAuthData[] = usersJson ? JSON.parse(usersJson) : [];
-
-    // Check if user already exists
-    const existingIndex = users.findIndex(u => u.phoneNumber === phoneNumber);
-    
-    if (existingIndex >= 0) {
-      users[existingIndex].verified = true;
-    } else {
-      users.push({
-        phoneNumber,
-        countryCode,
-        verified: true,
-        createdAt: Date.now(),
-      });
-    }
-
-    await SecureStore.setItemAsync(VERIFIED_USERS_KEY, JSON.stringify(users));
+    const fullPhoneNumber = `${countryCode}${phoneNumber}`;
+    await AsyncStorage.setItem('user_phone_number', fullPhoneNumber);
+    console.log('User phone number set:', fullPhoneNumber);
   } catch (error) {
-    console.error('Error adding verified user:', error);
+    console.error('Error setting user phone number:', error);
   }
-};
+}
 
-// Check if phone number is verified
-export const isPhoneVerified = async (phoneNumber: string): Promise<boolean> => {
+/**
+ * Get the current user's phone number
+ */
+export async function getCurrentUserPhone(): Promise<string | null> {
   try {
-    const authDataJson = await SecureStore.getItemAsync(
-      `${PHONE_AUTH_KEY}_${phoneNumber}`
-    );
-
-    if (!authDataJson) {
-      return false;
-    }
-
-    const authData: PhoneAuthData = JSON.parse(authDataJson);
-    return authData.verified;
+    const phoneNumber = await AsyncStorage.getItem('user_phone_number');
+    return phoneNumber;
   } catch (error) {
-    console.error('Error checking phone verification:', error);
-    return false;
-  }
-};
-
-// Get all verified users
-export const getVerifiedUsers = async (): Promise<PhoneAuthData[]> => {
-  try {
-    const usersJson = await SecureStore.getItemAsync(VERIFIED_USERS_KEY);
-    return usersJson ? JSON.parse(usersJson) : [];
-  } catch (error) {
-    console.error('Error getting verified users:', error);
-    return [];
-  }
-};
-
-// Get current user's phone data
-export const getCurrentUserPhone = async (): Promise<PhoneAuthData | null> => {
-  try {
-    const phoneNumber = await SecureStore.getItemAsync('current_user_phone');
-    if (!phoneNumber) {
-      return null;
-    }
-
-    const authDataJson = await SecureStore.getItemAsync(
-      `${PHONE_AUTH_KEY}_${phoneNumber}`
-    );
-
-    return authDataJson ? JSON.parse(authDataJson) : null;
-  } catch (error) {
-    console.error('Error getting current user phone:', error);
+    console.error('Error getting user phone number:', error);
     return null;
   }
-};
+}
 
-// Set current user's phone
-export const setCurrentUserPhone = async (phoneNumber: string): Promise<void> => {
+/**
+ * Check if the current user's phone is verified
+ */
+export async function isPhoneVerified(): Promise<boolean> {
   try {
-    await SecureStore.setItemAsync('current_user_phone', phoneNumber);
+    const verified = await AsyncStorage.getItem('phone_verified');
+    return verified === 'true';
   } catch (error) {
-    console.error('Error setting current user phone:', error);
+    console.error('Error checking phone verification status:', error);
+    return false;
   }
-};
+}
 
-// Resend verification code
-export const resendVerificationCode = async (
-  phoneNumber: string,
-  countryCode: string
-): Promise<{ success: boolean; code?: string; error?: string }> => {
-  return await sendVerificationCode(phoneNumber, countryCode);
-};
+/**
+ * Clear phone verification status (for logout)
+ */
+export async function clearPhoneVerification(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem('phone_verified');
+    await AsyncStorage.removeItem('user_phone_number');
+    console.log('Phone verification cleared');
+  } catch (error) {
+    console.error('Error clearing phone verification:', error);
+  }
+}
