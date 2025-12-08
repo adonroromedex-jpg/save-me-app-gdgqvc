@@ -99,7 +99,7 @@ export default function PhoneVerificationScreen() {
       
       console.log('Phone verified successfully, navigating to welcome-language');
       
-      // Navigate to welcome screen - DO NOT check authentication here
+      // Navigate to welcome screen
       router.replace('/(auth)/welcome-language');
     } else {
       Alert.alert('Error', result.error || 'Verification failed');
@@ -126,6 +126,28 @@ export default function PhoneVerificationScreen() {
     } else {
       Alert.alert('Error', result.error || 'Failed to resend code');
     }
+  };
+
+  const handleSkip = async () => {
+    Alert.alert(
+      'Skip Phone Verification?',
+      'Phone verification is required for secure sharing. You can skip for now, but some features will be limited.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Skip',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.setItem('phone_verified', 'true');
+            console.log('Phone verification skipped, navigating to welcome-language');
+            router.replace('/(auth)/welcome-language');
+          },
+        },
+      ]
+    );
   };
 
   if (step === 'code') {
@@ -155,7 +177,7 @@ export default function PhoneVerificationScreen() {
             <Text style={styles.title}>Enter Verification Code</Text>
             <Text style={styles.subtitle}>
               We sent a 6-digit code to{'\n'}
-              {countryCode}{phoneNumber}
+              {countryCode} {phoneNumber}
             </Text>
           </View>
 
@@ -231,9 +253,12 @@ export default function PhoneVerificationScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Pressable style={styles.backButton} onPress={() => router.back()}>
-          <IconSymbol name="arrow.left" size={24} color="#ffffff" />
-        </Pressable>
+        <View style={styles.topBar}>
+          <Text style={styles.stepIndicator}>Step 1 of 3</Text>
+          <Pressable onPress={handleSkip} style={styles.skipButtonTop}>
+            <Text style={styles.skipButtonText}>Skip</Text>
+          </Pressable>
+        </View>
 
         <View style={styles.header}>
           <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
@@ -335,6 +360,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'android' ? 48 : 60,
     paddingBottom: 40,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  stepIndicator: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
+  },
+  skipButtonTop: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 16,
+  },
+  skipButtonText: {
+    fontSize: 14,
+    color: '#ffffff',
+    fontWeight: '600',
   },
   backButton: {
     width: 40,

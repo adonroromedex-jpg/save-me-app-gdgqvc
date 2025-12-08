@@ -46,21 +46,22 @@ export default function SetupPINScreen() {
     setLoading(false);
 
     if (success) {
-      // Mark onboarding as complete
+      // Mark all onboarding steps as complete
       await AsyncStorage.setItem('pin_setup_complete', 'true');
       await AsyncStorage.setItem('onboarding_complete', 'true');
       await AsyncStorage.setItem('is_authenticated', 'true');
       
-      console.log('PIN setup complete, onboarding finished, navigating to home');
+      console.log('PIN setup complete, all onboarding finished');
       
       Alert.alert(
-        'Success',
-        'Your PIN has been set successfully!',
+        'Success!',
+        'Your PIN has been set successfully. Welcome to SaveMe!',
         [
           {
             text: 'Continue',
             onPress: () => {
-              // Navigate to home
+              console.log('Navigating to home');
+              // Navigate to home - the _layout will handle the app-lock requirement
               router.replace('/(tabs)/(home)/');
             },
           },
@@ -86,6 +87,10 @@ export default function SetupPINScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.topBar}>
+          <Text style={styles.stepIndicator}>Step 3 of 3</Text>
+        </View>
+
         <View style={styles.header}>
           <View style={[styles.logoContainer, { backgroundColor: colors.primary }]}>
             <IconSymbol name="lock.fill" size={60} color="#ffffff" />
@@ -165,6 +170,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'android' ? 48 : 60,
     paddingBottom: 40,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  stepIndicator: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
   },
   header: {
     alignItems: 'center',

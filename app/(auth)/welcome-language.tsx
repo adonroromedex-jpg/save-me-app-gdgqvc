@@ -43,6 +43,10 @@ export default function WelcomeLanguageScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.topBar}>
+          <Text style={styles.stepIndicator}>Step 2 of 3</Text>
+        </View>
+
         <View style={styles.header}>
           <View style={[styles.logoContainer, { backgroundColor: colors.success }]}>
             <IconSymbol name="checkmark.circle.fill" size={60} color="#ffffff" />
@@ -107,6 +111,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: Platform.OS === 'android' ? 48 : 60,
     paddingBottom: 40,
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  stepIndicator: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontWeight: '600',
   },
   header: {
     alignItems: 'center',

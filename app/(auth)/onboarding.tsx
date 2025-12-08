@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,16 +17,22 @@ const { width, height } = Dimensions.get('window');
 
 const onboardingData = [
   {
+    title: 'Welcome to Save Me',
+    description: 'Your privacy is our priority. Protect your intimate content with military-grade encryption.',
+    icon: 'checkmark.shield.fill',
+    color: colors.primary,
+  },
+  {
     title: 'Secure Phone Authentication',
     description: 'Verify your phone number to access the app and connect with other verified users securely.',
     icon: 'phone.fill',
-    color: colors.primary,
+    color: colors.secondary,
   },
   {
     title: 'End-to-End Encryption',
     description: 'All your photos and videos are encrypted locally with AES-256 before sharing. Only you control access.',
     icon: 'lock.shield.fill',
-    color: colors.secondary,
+    color: colors.success,
   },
   {
     title: 'Screenshot Protection',
@@ -38,12 +45,6 @@ const onboardingData = [
     description: 'Shared content automatically self-destructs after 24 hours. No traces left behind.',
     icon: 'timer',
     color: colors.warning,
-  },
-  {
-    title: 'Passcode on Every Open',
-    description: 'App requires authentication every time you open it. No session caching for maximum security.',
-    icon: 'key.fill',
-    color: colors.success,
   },
 ];
 
@@ -68,12 +69,30 @@ export default function OnboardingScreen() {
       });
       setCurrentIndex(currentIndex + 1);
     } else {
+      handleGetStarted();
+    }
+  };
+
+  const handleGetStarted = async () => {
+    try {
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      console.log('Onboarding completed, navigating to phone verification');
+      router.replace('/(auth)/phone-verification');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
       router.replace('/(auth)/phone-verification');
     }
   };
 
-  const handleSkip = () => {
-    router.replace('/(auth)/phone-verification');
+  const handleSkip = async () => {
+    try {
+      await AsyncStorage.setItem('onboarding_complete', 'true');
+      console.log('Onboarding skipped, navigating to phone verification');
+      router.replace('/(auth)/phone-verification');
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      router.replace('/(auth)/phone-verification');
+    }
   };
 
   const currentSlide = onboardingData[currentIndex];
@@ -87,11 +106,9 @@ export default function OnboardingScreen() {
 
       <View style={styles.header}>
         <Text style={styles.appName}>Save Me</Text>
-        {currentIndex < onboardingData.length - 1 && (
-          <Pressable onPress={handleSkip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </Pressable>
-        )}
+        <Pressable onPress={handleSkip} style={styles.skipButton}>
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
       </View>
 
       <Animated.View style={[styles.content, animatedStyle]}>
@@ -155,9 +172,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
+  skipButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 20,
+  },
   skipText: {
     fontSize: 16,
-    color: colors.primary,
+    color: '#ffffff',
     fontWeight: '600',
   },
   content: {
