@@ -129,7 +129,7 @@ export default function LoginScreen() {
           </Pressable>
 
           <Pressable
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[styles.button, { backgroundColor: colors.danger }]}
             onPress={handleLogin}
             disabled={loading}
           >
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#0000ff',
+    color: colors.primary,
     marginBottom: 8,
   },
   subtitle: {
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buttonText: {
-    color: '#ff0000',
+    color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
   },

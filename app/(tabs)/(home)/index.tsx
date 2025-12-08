@@ -6,7 +6,6 @@ import { IconSymbol } from "@/components/IconSymbol";
 import { useTheme } from "@react-navigation/native";
 import { colors, commonStyles } from "@/styles/commonStyles";
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -92,17 +91,17 @@ export default function HomeScreen() {
     {
       title: "Access Log",
       description: "Track all access to your private content",
-      icon: "list.bullet.clipboard.fill",
+      icon: "doc.text.fill",
       color: colors.highlight,
       route: "/access-log",
     },
   ];
 
   const securityFeatures = [
-    { icon: "faceid", text: "Facial Recognition" },
+    { icon: "lock.fill", text: "Facial Recognition" },
     { icon: "timer", text: "Auto-Delete 24h" },
     { icon: "eye.slash.fill", text: "Anti-Screenshot" },
-    { icon: "bell.badge.fill", text: "View Notifications" },
+    { icon: "bell.fill", text: "View Notifications" },
   ];
 
   const renderHeaderRight = () => (
@@ -149,7 +148,7 @@ export default function HomeScreen() {
           <View style={styles.securityBadgesContainer}>
             {securityFeatures.map((feature, index) => (
               <View key={index} style={styles.securityBadge}>
-                <IconSymbol name={feature.icon} color={colors.primary} size={20} />
+                <IconSymbol name={feature.icon as any} color={colors.primary} size={20} />
                 <Text style={styles.securityBadgeText}>{feature.text}</Text>
               </View>
             ))}
@@ -159,7 +158,7 @@ export default function HomeScreen() {
             style={[styles.authButton, { backgroundColor: colors.primary }]}
             onPress={handleAuthenticate}
           >
-            <IconSymbol name="faceid" color={colors.card} size={24} />
+            <IconSymbol name="lock.fill" color={colors.card} size={24} />
             <Text style={styles.authButtonText}>Authenticate</Text>
           </Pressable>
 
@@ -229,7 +228,7 @@ export default function HomeScreen() {
               }}
             >
               <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
-                <IconSymbol name={feature.icon} color={colors.card} size={28} />
+                <IconSymbol name={feature.icon as any} color={colors.card} size={28} />
               </View>
               <View style={styles.featureContent}>
                 <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -266,6 +265,7 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
+    paddingTop: Platform.OS === 'android' ? 48 : 0,
   },
   headerButtonContainer: {
     padding: 8,

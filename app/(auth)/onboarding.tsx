@@ -14,7 +14,6 @@ import { useRouter } from 'expo-router';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
   interpolate,
   Extrapolate,
 } from 'react-native-reanimated';
@@ -129,8 +128,7 @@ export default function OnboardingScreen() {
             {currentIndex === onboardingData.length - 1 ? 'Get Started' : 'Next'}
           </Text>
           <IconSymbol
-            ios_icon_name="arrow.right"
-            android_material_icon_name="arrow_forward"
+            name="arrow.right"
             size={20}
             color="#ffffff"
           />
@@ -218,7 +216,7 @@ function OnboardingSlide({ item, index, scrollX }: OnboardingSlideProps) {
     <View style={styles.slide}>
       <Animated.View style={[styles.slideContent, animatedStyle]}>
         <View style={[styles.iconContainer, { backgroundColor: item.color }]}>
-          <IconSymbol ios_icon_name={item.icon} android_material_icon_name={item.icon.replace('.fill', '')} size={80} color="#ffffff" />
+          <IconSymbol name={item.icon as any} size={80} color="#ffffff" />
         </View>
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.description}>{item.description}</Text>

@@ -17,7 +17,7 @@ export default function TabLayout() {
     {
       name: '(gallery)',
       route: '/(tabs)/(gallery)/',
-      icon: 'photo.stack.fill',
+      icon: 'photo.fill',
       label: 'Gallery',
     },
     {
@@ -42,7 +42,7 @@ export default function TabLayout() {
           <Label>Home</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="(gallery)">
-          <Icon sf="photo.stack.fill" drawable="ic_gallery" />
+          <Icon sf="photo.fill" drawable="ic_gallery" />
           <Label>Gallery</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="(settings)">

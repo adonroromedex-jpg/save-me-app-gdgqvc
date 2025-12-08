@@ -1,3 +1,4 @@
+
 // This file is a fallback for using MaterialIcons on Android and web.
 
 import React from "react";
@@ -111,6 +112,8 @@ const MAPPING = {
   "battery.25": "battery-2-bar",
   "lock.fill": "lock",
   "lock.open.fill": "lock-open",
+  "lock.shield.fill": "security",
+  "lock.shield": "security",
 
   // Shopping & Commerce
   "cart.fill": "shopping-cart",
@@ -146,6 +149,7 @@ const MAPPING = {
 
   // Sharing & Export
   "square.and.arrow.up": "share",
+  "square.and.arrow.up.fill": "share",
   "square.and.arrow.down": "download",
   "arrow.up.doc.fill": "upload-file",
   "link": "link",
@@ -157,10 +161,18 @@ const MAPPING = {
 
   // Visibility & Display
   "eye.fill": "visibility",
+  "eye": "visibility",
   "eye.slash.fill": "visibility-off",
+  "eye.slash": "visibility-off",
   "lightbulb.fill": "lightbulb",
   "moon.fill": "dark-mode",
   "sun.max.fill": "light-mode",
+
+  // Security & Protection
+  "checkmark.shield.fill": "verified-user",
+  "checkmark.shield": "verified-user",
+  "shield.fill": "shield",
+  "shield": "shield",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],
@@ -177,21 +189,34 @@ export type IconSymbolName = keyof typeof MAPPING;
  */
 export function IconSymbol({
   name,
+  ios_icon_name,
+  android_material_icon_name,
   size = 24,
   color,
   style,
 }: {
-  name: IconSymbolName;
+  name?: IconSymbolName;
+  ios_icon_name?: string;
+  android_material_icon_name?: string;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
+  // Support both old and new prop names
+  const iconName = name || ios_icon_name;
+  const materialIconName = android_material_icon_name || (iconName ? MAPPING[iconName as IconSymbolName] : undefined);
+
+  if (!iconName && !materialIconName) {
+    console.warn('IconSymbol: No icon name provided');
+    return null;
+  }
+
   return (
     <MaterialIcons
       color={color}
       size={size}
-      name={MAPPING[name]}
+      name={materialIconName || MAPPING[iconName as IconSymbolName] || "help-outline"}
       style={style as StyleProp<TextStyle>}
     />
   );
